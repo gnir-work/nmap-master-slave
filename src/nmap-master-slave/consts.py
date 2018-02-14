@@ -1,0 +1,6 @@
+REPORTER_OK_SIGNAL = 'ok'
+REPORTER_ERROR_SIGNAL = 'error'
+ZMQ_PROTOCOL = 'tcp'
+REPORTER_ADDRESS = '{}://127.0.0.1:5555'.format(ZMQ_PROTOCOL)
+MASTER_LOG_FILE = 'master.log'
+REPORTER_LOG_FILE = 'reporter.log'
