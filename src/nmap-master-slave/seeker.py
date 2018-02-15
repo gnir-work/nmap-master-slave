@@ -96,7 +96,6 @@ def scan_port(opt, ip=None, ports=None, params=None, port_add_arguments=None, ca
 
     callback = callback or callback_result
 
-    print('Initiating thread for %s' % opt)
     if opt == '-sO':
         scanner.scan(ip, arguments='-sO', callback=callback, sudo=True)
     else:
