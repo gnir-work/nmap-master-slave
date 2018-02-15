@@ -20,6 +20,8 @@ MAIL_SERVER = ''
 MAIL_SMTP_P = ''
 MAIL_ISSL = False
 def_pw = ''
+
+
 # --------------------------------------------------------
 
 
@@ -59,8 +61,10 @@ def conv_and_send(password, s_file, file_gzip):
     s_email.sendmail(SENDER, RECIPIENT, msg.as_string())
     s_email.quit()
 
+
 def use_def_pass():
     return def_pw
+
 
 if __name__ == '__main__':
     print('\nseek convert version 1.1')

@@ -8,6 +8,7 @@ import seekconvert
 from nmap import PortScannerAsync
 from multiprocessing.dummy import Pool as ThreadPool
 
+
 class NmapWaitForMe(PortScannerAsync):
     # I need to Polymorph PortScannerAsync in order for nmap to wait for other callback Process,
     # otherwise it will prematurely terminate
@@ -24,7 +25,7 @@ def callback_result(host, result):
         print('Host %s is down\n' % host),
     elif int(result['nmap']['scanstats']['uphosts']) == 1:
         print('info received from %s \n' % host),
-        r_buffer =(host)
+        r_buffer = (host)
         for p_found in result['scan'][host]:
             # p_found is either tcp, udp or gre
             if p_found in ports_prot:
@@ -34,30 +35,46 @@ def callback_result(host, result):
                     # For protocol scan IP
                     if p_parser == 'ip' or p_parser == 'gre':
                         r_buffer_p += '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (r_buffer, p_parser, 'Prot ' + str(p_name),
-                                    result['scan'][host][p_parser][p_name]['state'],
-                                    result['scan'][host][p_parser][p_name]['name'],
-                                    result['nmap']['scaninfo'][p_parser]['method'],
-                                    result['scan'][host][p_parser][p_name]['reason'],
-                                    result['nmap']['scanstats']['elapsed'])
+                                                                            result['scan'][host][p_parser][p_name][
+                                                                                'state'],
+                                                                            result['scan'][host][p_parser][p_name][
+                                                                                'name'],
+                                                                            result['nmap']['scaninfo'][p_parser][
+                                                                                'method'],
+                                                                            result['scan'][host][p_parser][p_name][
+                                                                                'reason'],
+                                                                            result['nmap']['scanstats']['elapsed'])
                     # For port scan TCP / UDP
                     else:
                         if len(sys.argv) == 5 and sys.argv[4].find('n') != -1:
                             if result['scan'][host][p_parser][p_name]['reason'] != 'no-response':
                                 r_buffer_p += '%s\t%s\t%s\t%s\t%s %s\t%s\t%s\t%s\n' % (r_buffer, p_parser, str(p_name),
-                                    result['scan'][host][p_parser][p_name]['state'],
-                                    result['scan'][host][p_parser][p_name]['product'],
-                                    result['scan'][host][p_parser][p_name]['version'],
-                                    result['nmap']['scaninfo'][p_parser]['method'],
-                                    result['scan'][host][p_parser][p_name]['reason'],
-                                    result['nmap']['scanstats']['elapsed'])
+                                                                                       result['scan'][host][p_parser][
+                                                                                           p_name]['state'],
+                                                                                       result['scan'][host][p_parser][
+                                                                                           p_name]['product'],
+                                                                                       result['scan'][host][p_parser][
+                                                                                           p_name]['version'],
+                                                                                       result['nmap']['scaninfo'][
+                                                                                           p_parser]['method'],
+                                                                                       result['scan'][host][p_parser][
+                                                                                           p_name]['reason'],
+                                                                                       result['nmap']['scanstats'][
+                                                                                           'elapsed'])
                         else:
                             r_buffer_p += '%s\t%s\t%s\t%s\t%s %s\t%s\t%s\t%s\n' % (r_buffer, p_parser, str(p_name),
-                                result['scan'][host][p_parser][p_name]['state'],
-                                result['scan'][host][p_parser][p_name]['product'],
-                                result['scan'][host][p_parser][p_name]['version'],
-                                result['nmap']['scaninfo'][p_parser]['method'],
-                                result['scan'][host][p_parser][p_name]['reason'],
-                                result['nmap']['scanstats']['elapsed'])
+                                                                                   result['scan'][host][p_parser][
+                                                                                       p_name]['state'],
+                                                                                   result['scan'][host][p_parser][
+                                                                                       p_name]['product'],
+                                                                                   result['scan'][host][p_parser][
+                                                                                       p_name]['version'],
+                                                                                   result['nmap']['scaninfo'][p_parser][
+                                                                                       'method'],
+                                                                                   result['scan'][host][p_parser][
+                                                                                       p_name]['reason'],
+                                                                                   result['nmap']['scanstats'][
+                                                                                       'elapsed'])
                 # Write buffer to file. lock is used for safety
                 with pool_lock:
                     f.write(r_buffer_p)
@@ -107,6 +124,7 @@ def display_usage():
     print('This script will automatically erase the content of the file if it is already existing.\n\n')
     return
 
+
 # VARIABLES ----------------------------------------------
 # NOTE: --version-light		: enable service version detection l2 in order to make it faster.
 # 							  However, it may not be as detailed. Remove this if you do not need it.
@@ -124,7 +142,7 @@ def display_usage():
 scanner = NmapWaitForMe()
 pool_lock = threading.Lock()
 nmap_args = []
-ports_prot = {'tcp':'tcp', 'udp': 'udp', 'gre':'gre', 'ip':'ip'}
+ports_prot = {'tcp': 'tcp', 'udp': 'udp', 'gre': 'gre', 'ip': 'ip'}
 known_vpn_port = '47,67,68,443,500,547,1701,1723,1812,4500,7250,10000'
 port_add_args = ' -n --max-retries 2 --max-rtt-timeout 800ms --min-hostgroup 256 --min_parallelism 50 --max_parallelism 700'
 
