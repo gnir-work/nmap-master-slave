@@ -23,11 +23,11 @@ def start_master():
     reporter.bind("tcp://127.0.0.1:{port}".format(port=REPORT_PORT))
 
     for ip in ips_to_scan:
-        print 'sending', ip
+        print('sending', ip)
         slave_socket.send_json({'ip': ip})
 
     for ip in ips_to_scan:
-        print 'done', ip, reporter.recv_json()
+        print('done', ip, reporter.recv_json())
 
 
 if __name__ == '__main__':

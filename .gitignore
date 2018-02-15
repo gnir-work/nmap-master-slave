@@ -3,3 +3,4 @@
 *.log
 venv/
 *.pyc
+python3_venv/
