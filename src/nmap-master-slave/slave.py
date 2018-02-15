@@ -7,7 +7,7 @@ from custom_exceptions import SocketNotConnected
 
 from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL
 
-StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
+# StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(SLAVE_LOG_FILE, bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
