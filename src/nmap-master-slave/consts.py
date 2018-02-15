@@ -4,3 +4,5 @@ REPORT_PORT = 6066
 ZMQ_PROTOCOL = 'tcp'
 MASTER_LOG_FILE = 'master.log'
 SLAVE_LOG_FILE = 'slave.log'
+MASTER_IP = '192.168.1.21'
+

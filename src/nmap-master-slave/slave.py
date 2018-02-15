@@ -5,7 +5,7 @@ import sys
 from logbook import StreamHandler, FileHandler, Logger
 from custom_exceptions import SocketNotConnected
 from seeker import scan_port
-from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL
+from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL, MASTER_IP
 
 # StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(SLAVE_LOG_FILE, bubble=True, level='INFO').push_application()
@@ -55,8 +55,10 @@ class Slave(object):
         """
         self._receive_socket = context.socket(zmq.PULL)
         self._report_socket = context.socket(zmq.PUSH)
-        self._receive_socket.connect("{protocol}://127.0.0.1:{port}".format(protocol=ZMQ_PROTOCOL, port=self.port))
-        self._report_socket.connect("{protocol}://127.0.0.1:{port}".format(protocol=ZMQ_PROTOCOL, port=REPORT_PORT))
+        self._receive_socket.connect(
+            "{protocol}://{ip}:{port}".format(protocol=ZMQ_PROTOCOL, ip=MASTER_IP, port=self.port))
+        self._report_socket.connect(
+            "{protocol}://{ip}:{port}".format(protocol=ZMQ_PROTOCOL, ip=MASTER_IP, port=REPORT_PORT))
 
     def start(self):
         """

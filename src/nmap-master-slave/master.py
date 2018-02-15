@@ -1,7 +1,7 @@
 import zmq
 import sys
 from logbook import StreamHandler, Logger, FileHandler
-from consts import MASTER_LOG_FILE, REPORT_PORT
+from consts import MASTER_LOG_FILE, REPORT_PORT, MASTER_IP
 
 # StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(MASTER_LOG_FILE, bubble=True, level='INFO').push_application()
@@ -16,11 +16,11 @@ def _retrieve_ips_to_scan():
 def start_master():
     # Slave socket
     slave_socket = context.socket(zmq.PUSH)
-    slave_socket.bind('tcp://127.0.0.1:5555')
+    slave_socket.bind('tcp://{ip}:5555'.format(ip=MASTER_IP))
     ips_to_scan = _retrieve_ips_to_scan()
     # receive status
     reporter = context.socket(zmq.PULL)
-    reporter.bind("tcp://127.0.0.1:{port}".format(port=REPORT_PORT))
+    reporter.bind("tcp://{ip}:{port}".format(ip=MASTER_IP, port=REPORT_PORT))
 
     for ip in ips_to_scan:
         print('sending', ip)
