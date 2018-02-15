@@ -21,7 +21,7 @@ class MysqlWriter(object):
         self._check_result(host, result)
         self.logger.info("Starting to parse scan from {}...".format(host))
 
-        scan = get_scan_by_id(self.npm_scan_id)
+        scan = get_scan_by_id(self.npm_scan_id, self.session)
         scan.elapsed = result['nmap']['scanstats']['elapsed']
 
         for protocol in filter(lambda prot: prot in PROTOCOLS, result['scan'][host]):
