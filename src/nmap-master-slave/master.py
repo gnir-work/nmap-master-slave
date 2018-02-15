@@ -68,7 +68,6 @@ def _parse_flags(flags):
 
     # Append Null and Fin on the scan
     nmap_args.extend(['-sN', '-sF'])
-    nmap_args.append('-sF')
 
     # Include closed port
     if len(sys.argv) == 5 and sys.argv[4].find('c') != -1:
