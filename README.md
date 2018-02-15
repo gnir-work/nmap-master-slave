@@ -2,7 +2,7 @@
 ### What is this repository for? ###
 
 This is a basic master-slaves design for running multiple nmap scans.
-The design:
+### The design:
 There is a master which holds a list of ips to scan.
 The master can recieve a number of parameters which will effect what scans will be run.
 At the end of all of the scans the master will send a mail to the defined emails (in `consts.py`)
