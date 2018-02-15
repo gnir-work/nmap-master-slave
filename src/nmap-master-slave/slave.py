@@ -6,10 +6,12 @@ import argparse
 from logbook import StreamHandler, FileHandler, Logger
 from custom_exceptions import SocketNotConnected
 from seeker import scan_port
-from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL, MASTER_IP
+from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE_FORMAT, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL, MASTER_IP
 
-# StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
-FileHandler(SLAVE_LOG_FILE, bubble=True, level='INFO').push_application()
+
+SLAVE_ID = random.randrange(1, 10005)
+StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
+FileHandler(SLAVE_LOG_FILE_FORMAT.format(id=SLAVE_ID), bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
 
@@ -92,7 +94,7 @@ def parse_arguments():
 if __name__ == '__main__':
     try:
         port = parse_arguments()
-        slave = Slave(id=random.randrange(1, 10005), port=port)
+        slave = Slave(id=SLAVE_ID, port=port)
         slave.connect()
         slave.start()
     except (KeyboardInterrupt, SystemExit):

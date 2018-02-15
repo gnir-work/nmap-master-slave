@@ -4,7 +4,7 @@ from logbook import StreamHandler, Logger, FileHandler
 from consts import MASTER_LOG_FILE, REPORT_PORT, MASTER_IP
 from itertools import cycle
 
-# StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
+StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(MASTER_LOG_FILE, bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
