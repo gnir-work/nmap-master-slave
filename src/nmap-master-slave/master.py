@@ -11,7 +11,7 @@ StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(MASTER_LOG_FILE, bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
-SLAVE_PORTS = [5555, 5556]
+SLAVE_PORTS = [5555]
 session = get_session()
 
 
@@ -20,7 +20,7 @@ def _retrieve_ips_to_scan():
     Needs to be implemented
     :return:
     """
-    return ['127.0.0.1', '127.0.0.1', '127.0.0.1']
+    return ['127.0.0.1']
 
 
 def _create_slave_socket(port):
@@ -97,7 +97,6 @@ def _send_ips_to_slaves(ips_to_scan, slave_sockets, flags):
         next(slave_sockets).send_json(
             {'ip': ip, 'scan_id': scan.id,
              'configuration': {'ports': '3000-3010', 'opt': opt, 'additional_args': additional_args, 'params': flags}})
-    return scan
 
 
 def _create_new_scan(ip):
@@ -111,13 +110,13 @@ def _create_new_scan(ip):
     return scan
 
 
-def _send_mail(ips, scan_id):
+def _send_mail(ips):
     """
     Sends an email notifying that the scan was complete
     """
     logger.info("Sending notification mail...")
     to = RECEIVER_MAIL
-    subject = 'Scan {} has finished!'.format(scan_id)
+    subject = 'A Scan has finished!'
     text = 'The scan of the following ips: {} has finished'.format(ips)
 
     server = smtplib.SMTP(SMTP_CONFIG['server'], SMTP_CONFIG['port'])
@@ -141,13 +140,13 @@ def start_master():
     reporter = context.socket(zmq.PULL)
     reporter.bind("tcp://{ip}:{port}".format(ip=MASTER_IP, port=REPORT_PORT))
 
-    scan = _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags='p')
+    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags='p')
 
     # Wait for all of the scans to complete or fail
     for ip in ips_to_scan:
         logger.info('Done scanning {ip} with status: {status}'.format(ip=ip, status=reporter.recv_json()['status']))
 
-    _send_mail(ips_to_scan, scan.id)
+    _send_mail(ips_to_scan)
 
 
 if __name__ == '__main__':
