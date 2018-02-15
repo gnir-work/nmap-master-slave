@@ -28,12 +28,18 @@ In order to run this project follow the following steps:
 * pip install -r requirments.txt
 * sudo apt-get install nmap
 
+The slaves and master assume that there is a mysql server running in which they will save the scan results.
+The configurations of db are in `consts.py` (user, password, server host, etc..)
+
 ## Running the slaves
 When running the slaves you will be asked to pass the port on which the slaves will listen.
 In order for the master to know about the slave you will need to add the port to `SLAVE_PORTS` list in `master.py`
 
 ## Examples
-on slave machine: python3 slave.py -i 5555
-on master python3 master.py
+on slave machine: `python3 slave.py -i 5555`
+on master: `python3 master.py`
+
+NOTE: it doesn't matter if the master is run first or the slaves, and as a matter of fact you can leave the slaves on and run the master
+as many times as you want with different ips and parameters.
 
 This will start the master which will send the slave each time a different ip to scan.
