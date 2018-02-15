@@ -17,7 +17,7 @@ RECIPIENT = ['']
 SUBJECT = 'Scan Report'
 BODY = 'Please see attached'
 MAIL_SERVER = ''
-MAIL_SMTP_P = 
+MAIL_SMTP_P = ''
 MAIL_ISSL = False
 def_pw = ''
 # --------------------------------------------------------
