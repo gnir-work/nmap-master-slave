@@ -44,7 +44,7 @@ def _send_ips_to_slaves(ips_to_scan, slave_sockets):
         logger.info('scanning {ip}...'.format(ip=ip))
         scan = _create_new_scan(ip)
         next(slave_sockets).send_json(
-            {'ip': ip, 'scan_id': scan.id, 'configuration': {'ports': '100-1000', 'opt': 'sS'}})
+            {'ip': ip, 'scan_id': scan.id, 'configuration': {'ports': '100-5000', 'opt': 'sS', 'params': 'n'}})
 
 
 def _create_new_scan(ip):
