@@ -18,6 +18,7 @@ def _retrieve_ips_to_scan():
 def _create_slave_socket(port):
     slave_socket = context.socket(zmq.PUSH)
     slave_socket.bind('tcp://{ip}:{port}'.format(ip=MASTER_IP, port=port))
+    return slave_socket
 
 
 def start_master():
