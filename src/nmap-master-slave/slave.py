@@ -74,9 +74,7 @@ class Slave(object):
             logger.info("Waiting for connection")
             data = self.receive_socket.recv_json()
             logger.info('working on {}'.format(data['ip']))
-            ignore_closed_ports = 'n' in data['configuration'].get('params', '')
-            writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, ignore_closed_ports=ignore_closed_ports,
-                                 session=self.session)
+
             try:
                 logger.info("Killing all previous nmap processes")
                 os.system('killall nmap')
@@ -85,7 +83,7 @@ class Slave(object):
                 scan.start_time = dt.now()
                 self.session.commit()
 
-                self._run_scans_async(data, writer)
+                self._run_scans_async(data)
 
                 scan.status = 'Done'
                 self.session.commit()
@@ -98,12 +96,18 @@ class Slave(object):
             else:
                 self.report_socket.send_json({'status': SLAVE_OK_SIGNAL})
 
-    def _run_scans_async(self, data, writer):
+    def _run_scans_async(self, data):
+        ignore_closed_ports = 'n' in data['configuration'].get('params', '')
         conf = data['configuration']
         logger.info("Running the following scans: {}".format(conf['opt']))
-        processes = [Process(target=scan_port, args=(opt, data['ip'], conf['ports'], conf['params'],
-                                                     port_add_arguments + conf['additional_args'],
-                                                     writer.write_results_to_db)) for opt in conf['opt']]
+        processes = []
+        for opt in conf['opt']:
+            writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger,
+                                 ignore_closed_ports=ignore_closed_ports,
+                                 session=get_session())
+            processes.append(Process(target=scan_port, args=(opt, data['ip'], conf['ports'], conf['params'],
+                                                             port_add_arguments + conf['additional_args'],
+                                                             writer.write_results_to_db)))
         for processes in processes:
             processes.start()
             if processes.is_alive():
