@@ -72,8 +72,8 @@ class Slave(object):
             logger.info("Waiting for connection")
             data = self.receive_socket.recv_json()
             logger.info('working on {}'.format(data['ip']))
-            write_closed_ports = 'n' in data['configuration'].get('params', '')
-            writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, write_closed_ports=write_closed_ports,
+            ignore_closed_ports = 'n' in data['configuration'].get('params', '')
+            writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, ignore_closed_ports=ignore_closed_ports,
                                  session=self.session)
             try:
                 scan = get_scan_by_id(data['scan_id'], self.session)
