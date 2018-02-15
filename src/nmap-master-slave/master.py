@@ -10,7 +10,7 @@ context = zmq.Context()
 
 
 def _retrieve_ips_to_scan():
-    return range(20)
+    return ['127.0.0.1']
 
 
 def start_master():
@@ -24,7 +24,7 @@ def start_master():
 
     for ip in ips_to_scan:
         print('sending', ip)
-        slave_socket.send_json({'ip': ip})
+        slave_socket.send_json({'ip': ip, 'ports': '1-10', 'opt': 'sS'})
 
     for ip in ips_to_scan:
         print('done', ip, reporter.recv_json())

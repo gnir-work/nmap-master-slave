@@ -4,7 +4,7 @@ import random
 import sys
 from logbook import StreamHandler, FileHandler, Logger
 from custom_exceptions import SocketNotConnected
-
+from nmap_script import scan_port
 from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL
 
 # StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
@@ -13,21 +13,15 @@ logger = Logger('Master')
 context = zmq.Context()
 
 
-def do_some_work():
-    """
-    Will be changed
-    :return:
-    """
-    if random.randint(0, 1) == 1:
-        raise ValueError
-    else:
-        time.sleep(1)
+def callback(host, result):
+    print(host, result)
 
 
 class Slave(object):
     """
     A slave that will listen on one port for jobs and execute them while reporting back to the master.
     """
+
     def __init__(self, id, port):
         self.id = id
         self.port = port
@@ -74,7 +68,7 @@ class Slave(object):
             data = self.receive_socket.recv_json()
             logger.info('working on {}'.format(data['ip']))
             try:
-                do_some_work()
+                scan_port(callback=callback, **data)
             except ValueError:
                 self.report_socket.send_json({'status': SLAVE_ERROR_SIGNAL})
                 logger.exception()
