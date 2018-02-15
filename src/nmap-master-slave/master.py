@@ -10,7 +10,7 @@ StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(MASTER_LOG_FILE, bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
-SLAVE_PORTS = [5555]
+SLAVE_PORTS = [5555, 5556]
 session = get_session()
 
 
@@ -19,7 +19,7 @@ def _retrieve_ips_to_scan():
     Needs to be implemented
     :return:
     """
-    return ['127.0.0.1']
+    return ['127.0.0.1', '127.0.0.1', '127.0.0.1']
 
 
 def _create_slave_socket(port):
@@ -34,6 +34,13 @@ def _create_slave_socket(port):
 
 
 def _parse_flags(flags):
+    """
+    Parse the falgs that are passed to the script.
+    This logic is taken from the main of seeker.py however the python code was altered a little bit (with no change
+    to the logic)
+    :param str flags: All of the flags that were passed to the script.
+    :return tuple: (list of nmap arguments, additional arguments that will be passed to nmap on top of the default ones)
+    """
     nmap_args = []
     additional_params = ''
     # Check if -Pn option is needed
@@ -92,6 +99,10 @@ def _send_ips_to_slaves(ips_to_scan, slave_sockets, flags):
 
 
 def _create_new_scan(ip):
+    """
+    Create a new scan in db and return it
+    :param str ip: The ip on which the scan will run
+    """
     scan = NmapScan(ip=ip, status="In Queue")
     session.add(scan)
     session.commit()
@@ -114,11 +125,13 @@ def start_master():
     reporter = context.socket(zmq.PULL)
     reporter.bind("tcp://{ip}:{port}".format(ip=MASTER_IP, port=REPORT_PORT))
 
-    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, 'p')
+    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags='p')
 
     # Wait for all of the scans to complete or fail
     for ip in ips_to_scan:
         logger.info('Done scanning {ip} with status: {status}'.format(ip=ip, status=reporter.recv_json()['status']))
+
+    _send_mail()
 
 
 if __name__ == '__main__':

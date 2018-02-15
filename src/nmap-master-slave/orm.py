@@ -10,6 +10,9 @@ Base = declarative_base()
 
 
 class NmapScan(Base):
+    """
+    The table which holds the metadata about the scan
+    """
     __tablename__ = 'nmap_scan'
     id = Column(Integer, primary_key=True, autoincrement=True)
     ip = Column(String(16))
@@ -20,6 +23,9 @@ class NmapScan(Base):
 
 
 class PortScan(Base):
+    """
+    The table which holds all the data about the ports that were scanned.
+    """
     __tablename__ = 'port_scan'
     id = Column(Integer, primary_key=True)
     port = Column(Integer)

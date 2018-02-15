@@ -96,6 +96,10 @@ class Slave(object):
                 self.report_socket.send_json({'status': SLAVE_OK_SIGNAL})
 
     def _run_scans_async(self, data):
+        """
+        Runs all of the scans that were issued in data async and wait for all of them to finish.
+        :param dict data: The data passed from the master
+        """
         ignore_closed_ports = 'n' in data['configuration'].get('params', '')
         conf = data['configuration']
         logger.info("Running the following scans: {}".format(conf['opt']))
