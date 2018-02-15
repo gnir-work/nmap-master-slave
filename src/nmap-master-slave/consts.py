@@ -1,6 +1,6 @@
 SLAVE_OK_SIGNAL = 'ok'
 SLAVE_ERROR_SIGNAL = 'error'
-REPORT_PORT = 6060
+REPORT_PORT = 6066
 ZMQ_PROTOCOL = 'tcp'
 MASTER_LOG_FILE = 'master.log'
 SLAVE_LOG_FILE = 'slave.log'
