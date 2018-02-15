@@ -29,6 +29,7 @@ The configurations of db are in `consts.py` (user, password, server host, etc..)
 
 ## Running the slaves
 When running the slaves you will be asked to pass the port on which the slaves will listen.
+
 **PLEASE NOTE:** In order for the master to know about the slave you will need to **add the port** to `SLAVE_PORTS` list in `master.py`
 
 ## Examples
