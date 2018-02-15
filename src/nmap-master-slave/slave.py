@@ -4,7 +4,7 @@ import sys
 import argparse
 from datetime import datetime as dt
 from logbook import StreamHandler, FileHandler, Logger
-from custom_exceptions import SocketNotConnected, ParseException
+from custom_exceptions import SocketNotConnected, ParseException, DbException
 from seeker import scan_port
 from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE_FORMAT, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL, MASTER_IP
 from writer import MysqlWriter
@@ -74,19 +74,29 @@ class Slave(object):
             logger.info('working on {}'.format(data['ip']))
             writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, session=self.session)
             try:
-                self._update_scan_status(data['scan_id'])
+                scan = self._get_scan(data['scan_id'])
+                scan.status = 'Running'
+                scan.start_time = dt.now()
+                self.session.commit()
                 scan_port(callback=writer.write_results_to_db, ip=data['ip'], **data['params'])
-            except (ValueError, ParseException):
+                scan.status = 'Done'
+                self.session.commit()
+            except (KeyboardInterrupt, SystemExit):
+                # We want to be able to abort the running of the code without a strange log :)
+                raise
+            except Exception:
                 self.report_socket.send_json({'status': SLAVE_ERROR_SIGNAL})
                 logger.exception()
             else:
                 self.report_socket.send_json({'status': SLAVE_OK_SIGNAL})
 
-    def _update_scan_status(self, scan_id):
+    def _get_scan(self, scan_id):
         scan = self.session.query(NmapScan).get(scan_id)
-        scan.start_time = dt.now()
-        scan.status = 'Running'
-        self.session.commit()
+        if scan is None:
+            raise DbException("Cant find scan {}".format(scan_id))
+        else:
+            self.session.add(scan)
+            return scan
 
 
 def parse_arguments():

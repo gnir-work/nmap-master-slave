@@ -8,3 +8,7 @@ class SocketNotConnected(Exception):
 
 class ParseException(Exception):
     pass
+
+
+class DbException(Exception):
+    pass
