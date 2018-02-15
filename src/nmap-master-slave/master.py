@@ -33,7 +33,50 @@ def _create_slave_socket(port):
     return slave_socket
 
 
-def _send_ips_to_slaves(ips_to_scan, slave_sockets):
+def _parse_flags(flags):
+    nmap_args = []
+    additional_params = ''
+    # Check if -Pn option is needed
+    if 't' in flags:
+        # Forced scan (skip discovery) on TCP Syn and UPD
+        if 'v' in flags:
+            if 't1' in flags:
+                nmap_args.extend(['-sU -sV', '-sV', '-Pn -sU -sV', '-Pn -sV'])
+            else:
+                nmap_args.extend(['-sU -sV -Pn', '-sV -Pn'])
+        else:
+            if len(sys.argv) == 5 and sys.argv[4].find('t1'):
+                nmap_args.extend(['-sS', '-sU', '-Pn -sU', '-Pn -sV'])
+            else:
+                nmap_args.extend(['-Pn -sS', '-Pn -sU'])
+    else:
+        # Normal Scan
+        if 'v' in flags != -1:
+            nmap_args.extend(['-sV', '-sU -A'])
+        else:
+            nmap_args.extend(['-sS', '-sU'])
+
+    # Check Parameters------------------------------------
+    # Protocol Scan. This triggers if option p is enabled
+    if 'p' in flags:
+        # Protocol Scanning
+        nmap_args.append('-sO')
+
+    # Include connect scan -sT
+    if 'o' in flags:
+        nmap_args.append('-sT')
+
+    # Append Null and Fin on the scan
+    nmap_args.extend(['-sN', '-sF'])
+    nmap_args.append('-sF')
+
+    # Include closed port
+    if len(sys.argv) == 5 and sys.argv[4].find('c') != -1:
+        additional_params = ' -ddd'
+    return nmap_args, additional_params
+
+
+def _send_ips_to_slaves(ips_to_scan, slave_sockets, flags):
     """
     Distributes the scanning between the slaves in a cycle.
     :param list of str ips_to_scan:
@@ -43,8 +86,10 @@ def _send_ips_to_slaves(ips_to_scan, slave_sockets):
     for index, ip in enumerate(ips_to_scan):
         logger.info('scanning {ip}...'.format(ip=ip))
         scan = _create_new_scan(ip)
+        opt, additional_args = _parse_flags(flags)
         next(slave_sockets).send_json(
-            {'ip': ip, 'scan_id': scan.id, 'configuration': {'ports': '3000-3010', 'opt': 'sS', 'params': 'n'}})
+            {'ip': ip, 'scan_id': scan.id,
+             'configuration': {'ports': '3000-3010', 'opt': opt, 'additional_args': additional_args, 'params': flags}})
 
 
 def _create_new_scan(ip):
@@ -70,7 +115,7 @@ def start_master():
     reporter = context.socket(zmq.PULL)
     reporter.bind("tcp://{ip}:{port}".format(ip=MASTER_IP, port=REPORT_PORT))
 
-    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter)
+    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, 'np')
 
     # Wait for all of the scans to complete or fail
     for ip in ips_to_scan:

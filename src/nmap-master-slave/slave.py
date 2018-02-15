@@ -4,18 +4,19 @@ import sys
 import argparse
 from datetime import datetime as dt
 from logbook import StreamHandler, FileHandler, Logger
-from custom_exceptions import SocketNotConnected, ParseException, DbException
+from custom_exceptions import SocketNotConnected
 from seeker import scan_port
 from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE_FORMAT, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL, MASTER_IP
 from writer import MysqlWriter
 from db import get_session, get_scan_by_id
-from orm import NmapScan
+import os
 
 SLAVE_ID = random.randrange(1, 10005)
 StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(SLAVE_LOG_FILE_FORMAT.format(id=SLAVE_ID), bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
+port_add_arguments = ' -n --max-retries 2 --max-rtt-timeout 800ms --min-hostgroup 256 --min_parallelism 50 --max_parallelism 700'
 
 
 class Slave(object):
@@ -76,11 +77,19 @@ class Slave(object):
             writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, ignore_closed_ports=ignore_closed_ports,
                                  session=self.session)
             try:
+                logger.info("Killing all previous nmap processes")
+                os.system('killall nmap')
                 scan = get_scan_by_id(data['scan_id'], self.session)
                 scan.status = 'Running'
                 scan.start_time = dt.now()
                 self.session.commit()
-                scan_port(callback=writer.write_results_to_db, ip=data['ip'], **data['configuration'])
+                conf = data['configuration']
+                logger.info("Running the following scans: {}".format(conf['opt']))
+                for opt in conf['opt']:
+                    scan_port(opt=opt, ip=data['ip'], ports=conf['ports'], params=conf['params'],
+                              port_add_arguments=port_add_arguments + conf['additional_args'],
+                              callback=writer.write_results_to_db)
+
                 scan.status = 'Done'
                 self.session.commit()
             except (KeyboardInterrupt, SystemExit):

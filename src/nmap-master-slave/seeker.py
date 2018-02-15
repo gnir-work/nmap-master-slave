@@ -24,13 +24,15 @@ def callback_result(host, result):
 
 # Thread
 # for port scanning
-def scan_port(opt, ip=None, ports=None, params=None, callback=None):
+def scan_port(opt, ip=None, ports=None, params=None, port_add_arguments=None, callback=None):
     # Backwards compatibility
     if ip is None:
         ip = sys.argv[1]
     if ports is None:
         ports = sys.argv[2]
-    if len(sys.argv) == 5:
+    if port_add_arguments is None:
+        port_add_arguments = port_add_args
+    if params is None and len(sys.argv) == 5:
         params = sys.argv[4]
 
     callback = callback or callback_result
@@ -40,9 +42,9 @@ def scan_port(opt, ip=None, ports=None, params=None, callback=None):
         scanner.scan(ip, arguments='-sO', callback=callback, sudo=True)
     else:
         if params and params.find('t1') != -1 and re.match(r'-Pn .*', opt):
-            scanner.scan(ip, known_vpn_port, opt + port_add_args, callback=callback, sudo=True)
+            scanner.scan(ip, known_vpn_port, opt + port_add_arguments, callback=callback, sudo=True)
         else:
-            scanner.scan(ip, ports, opt + port_add_args, callback=callback, sudo=True)
+            scanner.scan(ip, ports, opt + port_add_arguments, callback=callback, sudo=True)
     scanner.check_for_proc()
     while scanner.still_scanning():
         try:
