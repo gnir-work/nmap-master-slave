@@ -86,7 +86,7 @@ class Slave(object):
                 raise
             except Exception:
                 self.report_socket.send_json({'status': SLAVE_ERROR_SIGNAL})
-                logger.exception()
+                raise
             else:
                 self.report_socket.send_json({'status': SLAVE_OK_SIGNAL})
 
