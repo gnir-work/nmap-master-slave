@@ -21,7 +21,6 @@ Most of the script configuration is located in `consts.py` and are quite straigh
 * `n` this will filter and exlude those ports with "no-response" status
 
 ## How do I get set up?
-In order to run this project follow the following steps
 * pip install -r requirments.txt
 * sudo apt-get install nmap
 
