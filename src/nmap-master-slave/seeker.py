@@ -4,7 +4,6 @@ import threading
 import os
 import re
 import datetime
-import seekconvert
 from nmap import PortScannerAsync
 from multiprocessing.dummy import Pool as ThreadPool
 
@@ -185,9 +184,5 @@ if __name__ == '__main__':
             ft.seek(0)
             timestamp = (datetime.datetime.utcnow() - dt_start)
             ft.write(str(timestamp))
-
-        # Auto execute seekconvert.py
-        if len(sys.argv) == 5 and sys.argv[4].find('e') != -1:
-            seekconvert.conv_and_send(seekconvert.use_def_pass(), sys.argv[3], sys.argv[3] + '.csv.gz')
 
         print('\nDone!\n')
