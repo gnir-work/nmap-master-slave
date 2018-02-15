@@ -2,9 +2,10 @@ from sqlalchemy import Column, Integer, String, ForeignKey, create_engine, DateT
 from sqlalchemy.engine.url import URL
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from consts import MYSQL
 
-DB_URL = URL(drivername='mysql+pymysql', username='test', password='mypass', host='192.168.1.16',
-             port=3306, database='NmapScans')
+DB_URL = URL(drivername='mysql+pymysql', username=MYSQL['user'], password=MYSQL['password'], host=MYSQL['host'],
+             port=MYSQL['port'], database=MYSQL['data_base'])
 Base = declarative_base()
 
 
