@@ -81,7 +81,6 @@ class Slave(object):
                 scan_port(callback=writer.write_results_to_db, ip=data['ip'], **data['params'])
                 scan.status = 'Done'
                 self.session.commit()
-                logger.info("Done!")
             except (KeyboardInterrupt, SystemExit):
                 # We want to be able to abort the running of the code without a strange log :)
                 raise

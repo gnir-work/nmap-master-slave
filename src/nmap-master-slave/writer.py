@@ -42,7 +42,6 @@ class MysqlWriter(object):
                     raise
             self.logger.info("Found {} ports on {}".format(len(scan.ports), host))
             self.session.commit()
-            self.logger.info("Committed!")
 
     @staticmethod
     def _check_result(host, result):
