@@ -25,7 +25,15 @@ def callback_result(host, result):
 
 # Thread
 # for port scanning
-def scan_port(ip, ports, params, opt):
+def scan_port(opt, ip=None, ports=None, params=None):
+    # Backwards compatibility
+    if ip is None:
+        ip = sys.argv[1]
+    if ports is None:
+        ports = sys.argv[2]
+    if len(sys.argv) == 5:
+        params = sys.argv[4]
+
     print('Initiating thread for %s' % opt)
     if opt == '-sO':
         scanner.scan(ip, arguments='-sO', callback=callback_result, sudo=True)
