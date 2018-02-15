@@ -1,0 +1,5 @@
+Logbook==1.2.1
+nmap==0.0.1
+pkg-resources==0.0.0
+pyzmq==17.0.0
+zmq==0.0.0
