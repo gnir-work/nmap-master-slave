@@ -27,7 +27,7 @@ class MysqlWriter(object):
 
         scan = get_scan_by_id(self.npm_scan_id, self.session)
         scan.elapsed = result['nmap']['scanstats']['elapsed']
-
+        self.logger.info("Currently scan has found {} ports".format(len(scan.ports)))
         for protocol in filter(lambda prot: prot in PROTOCOLS, result['scan'][host]):
             for port in result['scan'][host][protocol]:
                 try:
