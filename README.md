@@ -29,7 +29,7 @@ The configurations of db are in `consts.py` (user, password, server host, etc..)
 
 ## Running the slaves
 When running the slaves you will be asked to pass the port on which the slaves will listen.
-In order for the master to know about the slave you will need to add the port to `SLAVE_PORTS` list in `master.py`
+**PLEASE NOTE:** In order for the master to know about the slave you will need to **add the port** to `SLAVE_PORTS` list in `master.py`
 
 ## Examples
 on slave machine: 
@@ -42,6 +42,6 @@ python3 master.py
 ```
 This will start the master which will send the slave each time a different ip to scan.
 
-NOTE: it doesn't matter if the master is run first or the slaves, and as a matter of fact you can leave the slaves on and run the master
+**NOTE:** it doesn't matter if the master is run first or the slaves, and as a matter of fact you can leave the slaves on and run the master
 as many times as you want with different ips and parameters.
 
