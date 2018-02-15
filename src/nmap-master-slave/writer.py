@@ -25,7 +25,8 @@ class MysqlWriter(object):
         self._check_result(host, result)
         self.logger.info("Starting to parse scan from {}...".format(host))
 
-        self.npm_scan.elapsed = result['nmap']['scanstats']['elapsed']
+        scan = self.npm_scan
+        scan.elapsed = result['nmap']['scanstats']['elapsed']
 
         for protocol in filter(lambda prot: prot in PROTOCOLS, result['scan'][host]):
             for port in result['scan'][host][protocol]:
@@ -38,7 +39,7 @@ class MysqlWriter(object):
                                             reason=result['scan'][host][protocol][port]['reason'],
                                             product=result['scan'][host][protocol][port]['product'],
                                             version=result['scan'][host][protocol][port]['version'])
-                    self.npm_scan.ports.append(scanned_port)
+                    scan.ports.append(scanned_port)
                 except Exception:
                     # Make sure nothing strange happens in the db.
                     self.session.rollback()
