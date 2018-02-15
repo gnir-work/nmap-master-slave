@@ -74,7 +74,7 @@ class Slave(object):
             logger.info('working on {}'.format(data['ip']))
             writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, session=self.session)
             try:
-                scan = get_scan_by_id(data['scan_id'])
+                scan = get_scan_by_id(data['scan_id'], self.session)
                 scan.status = 'Running'
                 scan.start_time = dt.now()
                 self.session.commit()
