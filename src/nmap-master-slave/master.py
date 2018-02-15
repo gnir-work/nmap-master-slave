@@ -8,7 +8,7 @@ StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(MASTER_LOG_FILE, bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
-SLAVE_PORTS = [5555, 5556]
+SLAVE_PORTS = [5555]
 
 
 def _retrieve_ips_to_scan():
@@ -16,7 +16,7 @@ def _retrieve_ips_to_scan():
     Needs to be implemented
     :return:
     """
-    return ['127.0.0.1', '127.0.0.1', '127.0.0.1', '127.0.0.1', '127.0.0.1', '127.0.0.1']
+    return ['127.0.0.1']
 
 
 def _create_slave_socket(port):
