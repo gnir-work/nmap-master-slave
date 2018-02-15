@@ -25,7 +25,7 @@ def callback_result(host, result):
 
 # Thread
 # for port scanning
-def scan_port(opt, ip=None, ports=None, params=None):
+def scan_port(opt, ip=None, ports=None, params=None, callback=None):
     # Backwards compatibility
     if ip is None:
         ip = sys.argv[1]
@@ -34,14 +34,16 @@ def scan_port(opt, ip=None, ports=None, params=None):
     if len(sys.argv) == 5:
         params = sys.argv[4]
 
+    callback = callback or callback_result
+
     print('Initiating thread for %s' % opt)
     if opt == '-sO':
-        scanner.scan(ip, arguments='-sO', callback=callback_result, sudo=True)
+        scanner.scan(ip, arguments='-sO', callback=callback, sudo=True)
     else:
         if params and params.find('t1') != -1 and re.match(r'-Pn .*', opt):
-            scanner.scan(ip, known_vpn_port, opt + port_add_args, callback=callback_result, sudo=True)
+            scanner.scan(ip, known_vpn_port, opt + port_add_args, callback=callback, sudo=True)
         else:
-            scanner.scan(ip, ports, opt + port_add_args, callback=callback_result, sudo=True)
+            scanner.scan(ip, ports, opt + port_add_args, callback=callback, sudo=True)
     scanner.check_for_proc()
     while scanner.still_scanning():
         try:
