@@ -2,6 +2,7 @@ import time
 import zmq
 import random
 import sys
+import argparse
 from logbook import StreamHandler, FileHandler, Logger
 from custom_exceptions import SocketNotConnected
 from seeker import scan_port
@@ -78,16 +79,23 @@ class Slave(object):
                 self.report_socket.send_json({'status': SLAVE_OK_SIGNAL})
 
 
-def start_slave():
+def start_slave(port=5555):
     slave_id = random.randrange(1, 10005)
-    slave = Slave(slave_id, 5555)
+    slave = Slave(slave_id, port)
     slave.connect()
     slave.start()
 
 
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--port", dest='port', type=int, help='The port on which the slave will run')
+    return parser.parse_args().port
+
+
 if __name__ == '__main__':
     try:
-        start_slave()
+        port = parse_arguments()
+        start_slave(port=port)
     except (KeyboardInterrupt, SystemExit):
         # We want to be able to abort the running of the code without a strange log :)
         raise
