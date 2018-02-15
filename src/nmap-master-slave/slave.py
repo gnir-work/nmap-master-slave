@@ -79,14 +79,11 @@ class Slave(object):
                 self.report_socket.send_json({'status': SLAVE_OK_SIGNAL})
 
 
-def start_slave(port=5555):
-    slave_id = random.randrange(1, 10005)
-    slave = Slave(slave_id, port)
-    slave.connect()
-    slave.start()
-
-
 def parse_arguments():
+    """
+    Retrieves the arguments from the command line.
+    :return int: The port in which the slave will listen.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--port", dest='port', type=int, help='The port on which the slave will run')
     return parser.parse_args().port
@@ -95,7 +92,9 @@ def parse_arguments():
 if __name__ == '__main__':
     try:
         port = parse_arguments()
-        start_slave(port=port)
+        slave = Slave(id=random.randrange(1, 10005), port=port)
+        slave.connect()
+        slave.start()
     except (KeyboardInterrupt, SystemExit):
         # We want to be able to abort the running of the code without a strange log :)
         raise

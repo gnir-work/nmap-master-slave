@@ -12,28 +12,57 @@ SLAVE_PORTS = [5555, 5556]
 
 
 def _retrieve_ips_to_scan():
+    """
+    Needs to be implemented
+    :return:
+    """
     return ['127.0.0.1', '127.0.0.1', '127.0.0.1', '127.0.0.1', '127.0.0.1', '127.0.0.1']
 
 
 def _create_slave_socket(port):
+    """
+    Creates and binds a socket to the given port
+    :param int port: The port on to which the socket will bind
+    :return zmq.sugar.socket.Socket: The configured socket
+    """
     slave_socket = context.socket(zmq.PUSH)
     slave_socket.bind('tcp://{ip}:{port}'.format(ip=MASTER_IP, port=port))
     return slave_socket
 
 
+def _send_ips_to_slaves(ips_to_scan, slave_sockets):
+    """
+    Distributes the scanning between the slaves in a cycle.
+    :param list of str ips_to_scan:
+    :param itertools.cycle slave_sockets:
+    :return:
+    """
+    for index, ip in enumerate(ips_to_scan):
+        logger.info('scanning {ip}...'.format(ip=ip))
+        next(slave_sockets).send_json({'ip': ip, 'ports': '1-10', 'opt': 'sS'})
+
+
+def _send_mail():
+    """
+    Needs to be implemeted
+    :return:
+    """
+    logger.info("Sending notification mail...")
+
+
 def start_master():
-    slave_sockets_iter = cycle(map(_create_slave_socket, SLAVE_PORTS))
     ips_to_scan = _retrieve_ips_to_scan()
-    # receive status
+    slave_sockets_iter = cycle(map(_create_slave_socket, SLAVE_PORTS))
+
+    # Create report socket
     reporter = context.socket(zmq.PULL)
     reporter.bind("tcp://{ip}:{port}".format(ip=MASTER_IP, port=REPORT_PORT))
 
-    for index, ip in enumerate(ips_to_scan):
-        print('sending', ip)
-        next(slave_sockets_iter).send_json({'ip': ip, 'ports': '1-10', 'opt': 'sS'})
+    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter)
 
+    # Wait for all of the scans to complete or fail
     for ip in ips_to_scan:
-        print('done', ip, reporter.recv_json())
+        logger.info('Done scanning {ip} with status: {status}'.format(ip=ip, status=reporter.recv_json()['status']))
 
 
 if __name__ == '__main__':
