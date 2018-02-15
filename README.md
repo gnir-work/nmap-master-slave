@@ -1,7 +1,4 @@
 # README #
-
-This README would normally document whatever steps are necessary to get your application up and running.
-
 ### What is this repository for? ###
 
 This is a basic master-slaves design for running multiple nmap scans.
@@ -24,7 +21,7 @@ Most of the script configuration is located in `consts.py` and are quite straigh
 * `n` this will filter and exlude those ports with "no-response" status
 
 ## How do I get set up?
-In order to run this project follow the following steps:
+In order to run this project follow the following steps
 * pip install -r requirments.txt
 * sudo apt-get install nmap
 
