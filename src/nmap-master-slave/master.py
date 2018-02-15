@@ -1,35 +1,33 @@
 import zmq
 import sys
 from logbook import StreamHandler, Logger, FileHandler
-from custom_exceptions import ReporterException
-from consts import REPORTER_OK_SIGNAL, REPORTER_ADDRESS, MASTER_LOG_FILE
+from consts import MASTER_LOG_FILE, REPORT_PORT
 
 StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(MASTER_LOG_FILE, bubble=True, level='INFO').push_application()
-logger = Logger('Reporter')
+logger = Logger('Master')
 context = zmq.Context()
 
 
-def _send_reporter_number_of_ips(reporter_socket, number_of_ips):
-    """
-    Try to send the number of ips that will be send to the reported and raise and exceptions upon failure.
-    :param zmq.sugar.socket.Socket reporter_socket: The zmq socket that connects to the reporter process.
-    :param int number_of_ips:
-    :return bool: True on success
-    """
-    reporter_socket.send(str(number_of_ips))
-    if reporter_socket.recv() == REPORTER_OK_SIGNAL:
-        return True
-    else:
-        raise ReporterException("Failed to send the reporter the number of ips that will be scanned.\n"
-                                "Please check both the masters and reporters logs.")
+def _retrieve_ips_to_scan():
+    return range(20)
 
 
 def start_master():
-    # Report socket
-    reporter_socket = context.socket(zmq.REQ)
-    reporter_socket.connect(REPORTER_ADDRESS)
-    _send_reporter_number_of_ips(reporter_socket, 29)
+    # Slave socket
+    slave_socket = context.socket(zmq.PUSH)
+    slave_socket.bind('tcp://127.0.0.1:5555')
+    ips_to_scan = _retrieve_ips_to_scan()
+    # receive status
+    reporter = context.socket(zmq.PULL)
+    reporter.bind("tcp://127.0.0.1:{port}".format(port=REPORT_PORT))
+
+    for ip in ips_to_scan:
+        print 'sending', ip
+        slave_socket.send_json({'ip': ip})
+
+    for ip in ips_to_scan:
+        print 'done', ip, reporter.recv_json()
 
 
 if __name__ == '__main__':
