@@ -105,8 +105,8 @@ class Slave(object):
         logger.info("Running the following scans: {}".format(conf['opt']))
         processes = []
         for opt in conf['opt']:
-            logger.log("Executing the folling scan:")
-            logger.log("scan id: {} ignoring_no_response: {} nmap params: {}, ports: {}, script params: {}".format(
+            logger.info("Executing the folling scan:")
+            logger.info("scan id: {} ignoring_no_response: {} nmap params: {}, ports: {}, script params: {}".format(
                 data['scan_id'], ignore_closed_ports, opt + port_add_arguments + conf['addition_args'], conf['ports'],
                 conf['params']
             ))
