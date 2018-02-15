@@ -114,7 +114,7 @@ def start_master():
     reporter = context.socket(zmq.PULL)
     reporter.bind("tcp://{ip}:{port}".format(ip=MASTER_IP, port=REPORT_PORT))
 
-    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, 'np')
+    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, 'p')
 
     # Wait for all of the scans to complete or fail
     for ip in ips_to_scan:
