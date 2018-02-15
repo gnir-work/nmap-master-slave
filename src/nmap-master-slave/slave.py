@@ -4,7 +4,7 @@ import random
 import sys
 from logbook import StreamHandler, FileHandler, Logger
 from custom_exceptions import SocketNotConnected
-from nmap_script import scan_port
+from seeker import scan_port
 from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL
 
 # StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
