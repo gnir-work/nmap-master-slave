@@ -40,6 +40,7 @@ class MysqlWriter(object):
                     # Make sure nothing strange happens in the db.
                     self.session.rollback()
                     raise
+            self.logger.info("Found {} ports on {}".format(len(scan.ports), host))
             self.session.commit()
 
     @staticmethod
