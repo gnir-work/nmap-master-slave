@@ -35,7 +35,7 @@ class MysqlWriter(object):
                                             state=result['scan'][host][protocol][port]['state'],
                                             name=result['scan'][host][protocol][port].get('name', ''),
                                             method=result['nmap']['scaninfo'][protocol]['method'],
-                                            reason=result['scan'][host][protocol]['reason'],
+                                            reason=result['scan'][host][protocol][port]['reason'],
                                             product=result['scan'][host][protocol][port]['product'],
                                             version=result['scan'][host][protocol][port]['version'])
                     self.npm_scan.ports.append(scanned_port)
