@@ -84,7 +84,7 @@ class Slave(object):
                 scan.status = 'Running'
                 scan.start_time = dt.now()
                 self.session.commit()
-                
+
                 self._run_scans_async(data, writer)
 
                 scan.status = 'Done'
@@ -105,6 +105,7 @@ class Slave(object):
                                                      port_add_arguments + conf['additional_args'],
                                                      writer.write_results_to_db)) for opt in conf['opt']]
         for processes in processes:
+            processes.start()
             if processes.is_alive():
                 processes.join()
 
