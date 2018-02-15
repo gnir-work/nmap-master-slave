@@ -53,13 +53,13 @@ def _parse_flags(flags):
             else:
                 nmap_args.extend(['-sU -sV -Pn', '-sV -Pn'])
         else:
-            if len(sys.argv) == 5 and sys.argv[4].find('t1'):
+            if 't1' in flags:
                 nmap_args.extend(['-sS', '-sU', '-Pn -sU', '-Pn -sV'])
             else:
                 nmap_args.extend(['-Pn -sS', '-Pn -sU'])
     else:
         # Normal Scan
-        if 'v' in flags != -1:
+        if 'v' in flags:
             nmap_args.extend(['-sV', '-sU -A'])
         else:
             nmap_args.extend(['-sS', '-sU'])
@@ -78,7 +78,7 @@ def _parse_flags(flags):
     nmap_args.extend(['-sN', '-sF'])
 
     # Include closed port
-    if len(sys.argv) == 5 and sys.argv[4].find('c') != -1:
+    if 'c' in flags:
         additional_params = ' -ddd'
     return nmap_args, additional_params
 
@@ -140,7 +140,7 @@ def start_master():
     reporter = context.socket(zmq.PULL)
     reporter.bind("tcp://{ip}:{port}".format(ip=MASTER_IP, port=REPORT_PORT))
 
-    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags='p')
+    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags='cp')
 
     # Wait for all of the scans to complete or fail
     for ip in ips_to_scan:
