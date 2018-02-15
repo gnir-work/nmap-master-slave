@@ -1,6 +1,6 @@
 from custom_exceptions import ParseException
-from orm import PortScan, NmapScan
-from db import get_session
+from orm import PortScan
+from db import get_session, get_scan_by_id
 
 PROTOCOLS = ['tcp', 'udp', 'gre', 'ip']
 
@@ -17,15 +17,11 @@ class MysqlWriter(object):
             self._session = get_session()
         return self._session
 
-    @property
-    def npm_scan(self):
-        return self.session.query(NmapScan).get(self.npm_scan_id)
-
     def write_results_to_db(self, host, result):
         self._check_result(host, result)
         self.logger.info("Starting to parse scan from {}...".format(host))
 
-        scan = self.npm_scan
+        scan = get_scan_by_id(self.npm_scan_id)
         scan.elapsed = result['nmap']['scanstats']['elapsed']
 
         for protocol in filter(lambda prot: prot in PROTOCOLS, result['scan'][host]):

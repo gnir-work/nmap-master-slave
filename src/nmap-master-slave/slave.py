@@ -8,7 +8,7 @@ from custom_exceptions import SocketNotConnected, ParseException, DbException
 from seeker import scan_port
 from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE_FORMAT, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL, MASTER_IP
 from writer import MysqlWriter
-from db import get_session
+from db import get_session, get_scan_by_id
 from orm import NmapScan
 
 SLAVE_ID = random.randrange(1, 10005)
@@ -74,7 +74,7 @@ class Slave(object):
             logger.info('working on {}'.format(data['ip']))
             writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, session=self.session)
             try:
-                scan = self._get_scan(data['scan_id'])
+                scan = get_scan_by_id(data['scan_id'])
                 scan.status = 'Running'
                 scan.start_time = dt.now()
                 self.session.commit()
@@ -89,14 +89,6 @@ class Slave(object):
                 raise
             else:
                 self.report_socket.send_json({'status': SLAVE_OK_SIGNAL})
-
-    def _get_scan(self, scan_id):
-        scan = self.session.query(NmapScan).get(scan_id)
-        if scan is None:
-            raise DbException("Cant find scan {}".format(scan_id))
-        else:
-            self.session.add(scan)
-            return scan
 
 
 def parse_arguments():
