@@ -3,12 +3,15 @@ import sys
 from logbook import StreamHandler, Logger, FileHandler
 from consts import MASTER_LOG_FILE, REPORT_PORT, MASTER_IP
 from itertools import cycle
+from orm import NmapScan
+from db import get_session
 
 StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(MASTER_LOG_FILE, bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
 SLAVE_PORTS = [5555]
+session = get_session()
 
 
 def _retrieve_ips_to_scan():
@@ -39,7 +42,15 @@ def _send_ips_to_slaves(ips_to_scan, slave_sockets):
     """
     for index, ip in enumerate(ips_to_scan):
         logger.info('scanning {ip}...'.format(ip=ip))
-        next(slave_sockets).send_json({'ip': ip, 'ports': '1-10', 'opt': 'sS'})
+        scan = _create_new_scan(ip)
+        next(slave_sockets).send_json({'ip': ip, 'scan_id': scan.id, 'params': {'ports': '1-10', 'opt': 'sS'}})
+
+
+def _create_new_scan(ip):
+    scan = NmapScan(ip=ip, status="In Queue")
+    session.add(scan)
+    session.commit()
+    return scan
 
 
 def _send_mail():

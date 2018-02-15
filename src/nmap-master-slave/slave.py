@@ -74,7 +74,7 @@ class Slave(object):
             writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, session=self.session)
             try:
                 self._update_scan_status(data['scan_id'])
-                scan_port(callback=writer.write_results_to_db, **data)
+                scan_port(callback=writer.write_results_to_db, ip=data['ip'], **data['params'])
             except (ValueError, ParseException):
                 self.report_socket.send_json({'status': SLAVE_ERROR_SIGNAL})
                 logger.exception()
