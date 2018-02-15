@@ -69,6 +69,7 @@ class Slave(object):
         master.
         """
         while True:
+            logger.info("Waiting for connection")
             data = self.receive_socket.recv_json()
             logger.info('working on {}'.format(data['ip']))
             writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, session=self.session)
