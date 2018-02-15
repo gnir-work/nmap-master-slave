@@ -72,13 +72,15 @@ class Slave(object):
             logger.info("Waiting for connection")
             data = self.receive_socket.recv_json()
             logger.info('working on {}'.format(data['ip']))
-            writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, session=self.session)
+            write_closed_ports = 'n' in data['configuration'].get('params', '')
+            writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, write_closed_ports=write_closed_ports,
+                                 session=self.session)
             try:
                 scan = get_scan_by_id(data['scan_id'], self.session)
                 scan.status = 'Running'
                 scan.start_time = dt.now()
                 self.session.commit()
-                scan_port(callback=writer.write_results_to_db, ip=data['ip'], **data['params'])
+                scan_port(callback=writer.write_results_to_db, ip=data['ip'], **data['configuration'])
                 scan.status = 'Done'
                 self.session.commit()
             except (KeyboardInterrupt, SystemExit):

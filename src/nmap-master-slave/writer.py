@@ -6,10 +6,14 @@ PROTOCOLS = ['tcp', 'udp', 'gre', 'ip']
 
 
 class MysqlWriter(object):
-    def __init__(self, npm_scan_id, logger, session=None):
+    def __init__(self, npm_scan_id, logger, write_closed_ports, session=None):
         self.npm_scan_id = npm_scan_id
         self.logger = logger
         self._session = session
+        self.write_closed_ports = write_closed_ports
+        self.logger.info(
+            "Created new Writer with the following configuration: id: {}, closed_ports: {}".format(npm_scan_id,
+                                                                                                   write_closed_ports))
 
     @property
     def session(self):
@@ -27,15 +31,16 @@ class MysqlWriter(object):
         for protocol in filter(lambda prot: prot in PROTOCOLS, result['scan'][host]):
             for port in result['scan'][host][protocol]:
                 try:
-                    scanned_port = PortScan(port=port,
-                                            protocol=protocol,
-                                            state=result['scan'][host][protocol][port]['state'],
-                                            name=result['scan'][host][protocol][port].get('name', ''),
-                                            method=result['nmap']['scaninfo'][protocol]['method'],
-                                            reason=result['scan'][host][protocol][port]['reason'],
-                                            product=result['scan'][host][protocol][port]['product'],
-                                            version=result['scan'][host][protocol][port]['version'])
-                    scan.ports.append(scanned_port)
+                    if self.write_closed_ports or result['scan'][host][protocol][port]['reason'] != 'no-response':
+                        scanned_port = PortScan(port=port,
+                                                protocol=protocol,
+                                                state=result['scan'][host][protocol][port]['state'],
+                                                name=result['scan'][host][protocol][port].get('name', ''),
+                                                method=result['nmap']['scaninfo'][protocol]['method'],
+                                                reason=result['scan'][host][protocol][port]['reason'],
+                                                product=result['scan'][host][protocol][port]['product'],
+                                                version=result['scan'][host][protocol][port]['version'])
+                        scan.ports.append(scanned_port)
                 except Exception:
                     # Make sure nothing strange happens in the db.
                     self.session.rollback()
