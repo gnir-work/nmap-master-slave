@@ -4,3 +4,7 @@ class ReporterException(Exception):
 
 class SocketNotConnected(Exception):
     pass
+
+
+class ParseException(Exception):
+    pass

@@ -14,8 +14,6 @@ class NmapScan(Base):
     ip = Column(String(16))
     start_time = Column(DateTime)
     elapsed = Column(Float)
-    method = Column(String(32))
-
     status = Column(String(32))
     ports = relationship("PortScan", back_populates="npm_scan")
 
@@ -32,6 +30,7 @@ class PortScan(Base):
     product = Column(String(64))
     version = Column(String(32))
     protocol = Column(String(32))
+    method = Column(String(32))
 
 
 engine = create_engine(DB_URL)

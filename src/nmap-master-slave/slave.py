@@ -1,23 +1,21 @@
-import time
 import zmq
 import random
 import sys
 import argparse
+from datetime import datetime as dt
 from logbook import StreamHandler, FileHandler, Logger
-from custom_exceptions import SocketNotConnected
+from custom_exceptions import SocketNotConnected, ParseException
 from seeker import scan_port
 from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE_FORMAT, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL, MASTER_IP
-
+from writer import MysqlWriter
+from db import get_session
+from orm import NmapScan
 
 SLAVE_ID = random.randrange(1, 10005)
 StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(SLAVE_LOG_FILE_FORMAT.format(id=SLAVE_ID), bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
-
-
-def callback(host, result):
-    print(host, result)
 
 
 class Slave(object):
@@ -30,6 +28,7 @@ class Slave(object):
         self.port = port
         self._receive_socket = None
         self._report_socket = None
+        self.session = get_session()
 
     @staticmethod
     def _check_socket(socket):
@@ -72,13 +71,21 @@ class Slave(object):
         while True:
             data = self.receive_socket.recv_json()
             logger.info('working on {}'.format(data['ip']))
+            writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, session=self.session)
             try:
-                scan_port(callback=callback, **data)
-            except ValueError:
+                self._update_scan_status(data['scan_id'])
+                scan_port(callback=writer.write_results_to_db, **data)
+            except (ValueError, ParseException):
                 self.report_socket.send_json({'status': SLAVE_ERROR_SIGNAL})
                 logger.exception()
             else:
                 self.report_socket.send_json({'status': SLAVE_OK_SIGNAL})
+
+    def _update_scan_status(self, scan_id):
+        scan = self.session.query(NmapScan).get(scan_id)
+        scan.start_time = dt.now()
+        scan.status = 'Running'
+        self.session.commit()
 
 
 def parse_arguments():
