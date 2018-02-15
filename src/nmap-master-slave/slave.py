@@ -107,7 +107,7 @@ class Slave(object):
         for opt in conf['opt']:
             logger.info("Executing the folling scan:")
             logger.info("scan id: {} ignoring_no_response: {} nmap params: {}, ports: {}, script params: {}".format(
-                data['scan_id'], ignore_closed_ports, opt + port_add_arguments + conf['addition_args'], conf['ports'],
+                data['scan_id'], ignore_closed_ports, opt + port_add_arguments + conf['additional_args'], conf['ports'],
                 conf['params']
             ))
             writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger,
