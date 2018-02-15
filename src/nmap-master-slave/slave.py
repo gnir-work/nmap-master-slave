@@ -9,6 +9,7 @@ from seeker import scan_port
 from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE_FORMAT, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL, MASTER_IP
 from writer import MysqlWriter
 from db import get_session, get_scan_by_id
+from multiprocessing import Process
 import os
 
 SLAVE_ID = random.randrange(1, 10005)
@@ -83,12 +84,8 @@ class Slave(object):
                 scan.status = 'Running'
                 scan.start_time = dt.now()
                 self.session.commit()
-                conf = data['configuration']
-                logger.info("Running the following scans: {}".format(conf['opt']))
-                for opt in conf['opt']:
-                    scan_port(opt=opt, ip=data['ip'], ports=conf['ports'], params=conf['params'],
-                              port_add_arguments=port_add_arguments + conf['additional_args'],
-                              callback=writer.write_results_to_db)
+                
+                self._run_scans_async(data, writer)
 
                 scan.status = 'Done'
                 self.session.commit()
@@ -100,6 +97,16 @@ class Slave(object):
                 raise
             else:
                 self.report_socket.send_json({'status': SLAVE_OK_SIGNAL})
+
+    def _run_scans_async(self, data, writer):
+        conf = data['configuration']
+        logger.info("Running the following scans: {}".format(conf['opt']))
+        processes = [Process(target=scan_port, args=(opt, data['ip'], conf['ports'], conf['params'],
+                                                     port_add_arguments + conf['additional_args'],
+                                                     writer.write_results_to_db)) for opt in conf['opt']]
+        for processes in processes:
+            if processes.is_alive():
+                processes.join()
 
 
 def parse_arguments():
