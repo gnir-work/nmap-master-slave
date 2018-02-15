@@ -74,6 +74,9 @@ class Slave(object):
             logger.info("Waiting for connection")
             data = self.receive_socket.recv_json()
             logger.info('working on {}'.format(data['ip']))
+            ignore_closed_ports = 'n' in data['configuration'].get('params', '')
+            writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger, ignore_closed_ports=ignore_closed_ports,
+                                 session=self.session)
             try:
                 logger.info("Killing all previous nmap processes")
                 os.system('killall nmap')
@@ -81,9 +84,13 @@ class Slave(object):
                 scan.status = 'Running'
                 scan.start_time = dt.now()
                 self.session.commit()
+                conf = data['configuration']
+                logger.info("Running the following scans: {}".format(conf['opt']))
+                for opt in conf['opt']:
+                    scan_port(opt=opt, ip=data['ip'], ports=conf['ports'], params=conf['params'],
+                              port_add_arguments=port_add_arguments + conf['additional_args'],
+                              callback=writer.write_results_to_db)
 
-                self._run_scans_async(data)
-                
                 scan.status = 'Done'
                 self.session.commit()
             except (KeyboardInterrupt, SystemExit):
