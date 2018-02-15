@@ -1,7 +1,8 @@
 import zmq
+import smtplib
 import sys
 from logbook import StreamHandler, Logger, FileHandler
-from consts import MASTER_LOG_FILE, REPORT_PORT, MASTER_IP
+from consts import MASTER_LOG_FILE, REPORT_PORT, MASTER_IP, RECEIVER_MAIL, SENDER_MAIL, SENDER_PASSWORD, SMTP_CONFIG
 from itertools import cycle
 from orm import NmapScan
 from db import get_session
@@ -87,7 +88,7 @@ def _send_ips_to_slaves(ips_to_scan, slave_sockets, flags):
     Distributes the scanning between the slaves in a cycle.
     :param list of str ips_to_scan:
     :param itertools.cycle slave_sockets:
-    :return:
+    :return scan: The scan that was initialized
     """
     for index, ip in enumerate(ips_to_scan):
         logger.info('scanning {ip}...'.format(ip=ip))
@@ -96,6 +97,7 @@ def _send_ips_to_slaves(ips_to_scan, slave_sockets, flags):
         next(slave_sockets).send_json(
             {'ip': ip, 'scan_id': scan.id,
              'configuration': {'ports': '3000-3010', 'opt': opt, 'additional_args': additional_args, 'params': flags}})
+    return scan
 
 
 def _create_new_scan(ip):
@@ -109,12 +111,26 @@ def _create_new_scan(ip):
     return scan
 
 
-def _send_mail():
+def _send_mail(ips, scan_id):
     """
-    Needs to be implemeted
-    :return:
+    Sends an email notifying that the scan was complete
     """
     logger.info("Sending notification mail...")
+    to = RECEIVER_MAIL
+    subject = 'Scan {} has finished!'.format(scan_id)
+    text = 'The scan of the following ips: {} has finished'.format(ips)
+
+    server = smtplib.SMTP(SMTP_CONFIG['server'], SMTP_CONFIG['port'])
+    server.ehlo()
+    server.starttls()
+    server.login(SENDER_MAIL, SENDER_PASSWORD)
+
+    BODY = 'To: {}\r\nFROM: {}\r\nSUBJECT: {}\r\n\r\n{}'.format(to, SENDER_MAIL, subject, text)
+
+    server.sendmail(SENDER_MAIL, [to], BODY)
+    logger.info("Done sending email!")
+
+    server.quit()
 
 
 def start_master():
@@ -125,13 +141,13 @@ def start_master():
     reporter = context.socket(zmq.PULL)
     reporter.bind("tcp://{ip}:{port}".format(ip=MASTER_IP, port=REPORT_PORT))
 
-    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags='p')
+    scan = _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags='p')
 
     # Wait for all of the scans to complete or fail
     for ip in ips_to_scan:
         logger.info('Done scanning {ip} with status: {status}'.format(ip=ip, status=reporter.recv_json()['status']))
 
-    _send_mail()
+    _send_mail(ips_to_scan, scan.id)
 
 
 if __name__ == '__main__':

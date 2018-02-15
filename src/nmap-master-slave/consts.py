@@ -13,3 +13,11 @@ MYSQL = {
     'port': 3306
 }
 
+SENDER_MAIL = 'nmaptesting123@gmail.com'
+SENDER_PASSWORD = 'nmaptesting'
+RECEIVER_MAIL = 'gnir.work@gmail.com'
+SMTP_CONFIG = {
+    'server': 'smtp.gmail.com',
+    'port': 587
+}
+
