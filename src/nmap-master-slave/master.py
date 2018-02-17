@@ -14,7 +14,7 @@ StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(MASTER_LOG_FILE, bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
-SLAVE_PORTS = [5555]
+SLAVE_PORTS = [5555, 5556, 5557, 5558]
 session = get_session()
 NmapParameters = namedtuple('NmapParameters', ('nmap_params', 'additional_params'))
 
@@ -28,7 +28,7 @@ def _divide_range_to_singe_ips(ip_range):
     return [str(single_ip) for single_ip in list(IPNetwork(ip_range))]
 
 
-def _retrieve_ips_to_scan(source_file_name, divide_ips):
+def _retrieve_ips_to_scan(source_file_name, divide_ips=False):
     """
     Retrieve a list of ips to scan.
     The function reads the list from a file.
@@ -37,7 +37,7 @@ def _retrieve_ips_to_scan(source_file_name, divide_ips):
     :return list of str: A list of ips or ip ranges
     """
     with open(source_file_name) as ips_file:
-        ip_ranges = ips_file.readlines()
+        ip_ranges = [ip_range.strip() for ip_range in ips_file.readlines()]
         if divide_ips:
             single_ips = []
             for ip_range in ip_ranges:
@@ -201,7 +201,7 @@ def parse_arguments():
 if __name__ == '__main__':
     try:
         arguments = parse_arguments()
-        ips_to_scan = _retrieve_ips_to_scan(arguments.ips_source_file_name)
+        ips_to_scan = _retrieve_ips_to_scan(arguments.ips_source_file_name, divide_ips=arguments.divide_ips)
         start_master(ips_to_scan=ips_to_scan, flags=arguments.flags, ports=arguments.ports)
     except (KeyboardInterrupt, SystemExit):
         # We want to be able to abort the running of the code without a strange log :)
