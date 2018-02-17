@@ -113,13 +113,23 @@ class Slave(object):
             writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger,
                                  ignore_closed_ports=ignore_closed_ports,
                                  session=get_session())
-            processes.append(Process(target=scan_port, args=(opt, data['ip'], conf['ports'], conf['params'],
+            processes.append(Process(target=run_scan, args=(opt, data['ip'], conf['ports'], conf['params'],
                                                              port_add_arguments + conf['additional_args'],
                                                              writer.write_results_to_db)))
         for processes in processes:
             processes.start()
             if processes.is_alive():
                 processes.join()
+
+
+def run_scan(opt, ip, ports, params, port_add_arguments, callback):
+    try:
+        scan_port(opt, ip=ip, ports=ports, params=params, port_add_arguments=port_add_arguments, callback=callback)
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except Exception:
+        logger.exception()
+        raise
 
 
 def parse_arguments():
