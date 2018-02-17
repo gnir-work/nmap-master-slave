@@ -1,3 +1,5 @@
+import argparse
+
 import zmq
 import smtplib
 import sys
@@ -15,11 +17,12 @@ SLAVE_PORTS = [5555]
 session = get_session()
 
 
-def _retrieve_ips_to_scan():
+def _retrieve_ips_to_scan(source_file_name):
     """
     Needs to be implemented
     :return:
     """
+    print(source_file_name)
     return ['127.0.0.1']
 
 
@@ -83,11 +86,13 @@ def _parse_flags(flags):
     return nmap_args, additional_params
 
 
-def _send_ips_to_slaves(ips_to_scan, slave_sockets, flags):
+def _send_ips_to_slaves(ips_to_scan, slave_sockets, flags, ports):
     """
     Distributes the scanning between the slaves in a cycle.
     :param list of str ips_to_scan:
     :param itertools.cycle slave_sockets:
+    :param str flags: The flags that will be parsed and passed to the slave
+    :param str ports: The ports to scan.
     :return scan: The scan that was initialized
     """
     for index, ip in enumerate(ips_to_scan):
@@ -96,7 +101,7 @@ def _send_ips_to_slaves(ips_to_scan, slave_sockets, flags):
         opt, additional_args = _parse_flags(flags)
         next(slave_sockets).send_json(
             {'ip': ip, 'scan_id': scan.id,
-             'configuration': {'ports': '3000-3010', 'opt': opt, 'additional_args': additional_args, 'params': flags}})
+             'configuration': {'ports': ports, 'opt': opt, 'additional_args': additional_args, 'params': flags}})
 
 
 def _create_new_scan(ip):
@@ -124,23 +129,22 @@ def _send_mail(ips):
     server.starttls()
     server.login(SENDER_MAIL, SENDER_PASSWORD)
 
-    BODY = 'To: {}\r\nFROM: {}\r\nSUBJECT: {}\r\n\r\n{}'.format(to, SENDER_MAIL, subject, text)
+    body = 'To: {}\r\nFROM: {}\r\nSUBJECT: {}\r\n\r\n{}'.format(to, SENDER_MAIL, subject, text)
 
-    server.sendmail(SENDER_MAIL, [to], BODY)
+    server.sendmail(SENDER_MAIL, [to], body)
     logger.info("Done sending email!")
 
     server.quit()
 
 
-def start_master():
-    ips_to_scan = _retrieve_ips_to_scan()
+def start_master(ips_to_scan, flags, ports):
     slave_sockets_iter = cycle(map(_create_slave_socket, SLAVE_PORTS))
 
     # Create report socket
     reporter = context.socket(zmq.PULL)
     reporter.bind("tcp://{ip}:{port}".format(ip=MASTER_IP, port=REPORT_PORT))
 
-    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags='cp')
+    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags=flags, ports=ports)
 
     # Wait for all of the scans to complete or fail
     for ip in ips_to_scan:
@@ -149,9 +153,33 @@ def start_master():
     _send_mail(ips_to_scan)
 
 
+def parse_arguments():
+    """
+    Retrieves the arguments from the command line.
+    :return int: The port in which the slave will listen.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--file", dest='ips_source_file_name', type=str,
+                        help='The name of the file which will '
+                             'contain the list of ips (can be relative or absolute path)', required=True)
+    parser.add_argument("--divide", dest='divide_ips', action='store_true',
+                        help='A flag which indicates whether an ips range should be a single job for one'
+                             'slave or should the master divide the range to single ips and each ip will'
+                             'be considered a job for a slave', default=False)
+    parser.add_argument("--flags", dest='flags', type=str,
+                        help='The flags of the script (see the README.md file)', required=True)
+
+    parser.add_argument("-p", "--ports", dest='ports', type=str,
+                        help='The ports which will be scanned for the ips.', required=True)
+
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
     try:
-        start_master()
+        arguments = parse_arguments()
+        ips_to_scan = _retrieve_ips_to_scan(arguments.ips_source_file_name)
+        # start_master(ips_to_scan=ips_to_scan, flags=arguments.flags, ports=arguments.ports)
     except (KeyboardInterrupt, SystemExit):
         # We want to be able to abort the running of the code without a strange log :)
         raise
