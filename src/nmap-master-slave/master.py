@@ -1,5 +1,5 @@
 import argparse
-
+from collections import namedtuple
 import zmq
 import smtplib
 import sys
@@ -8,6 +8,7 @@ from consts import MASTER_LOG_FILE, REPORT_PORT, MASTER_IP, RECEIVER_MAIL, SENDE
 from itertools import cycle
 from orm import NmapScan
 from db import get_session
+from netaddr import IPNetwork
 
 StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(MASTER_LOG_FILE, bubble=True, level='INFO').push_application()
@@ -15,15 +16,35 @@ logger = Logger('Master')
 context = zmq.Context()
 SLAVE_PORTS = [5555]
 session = get_session()
+NmapParameters = namedtuple('NmapParameters', ('nmap_params', 'additional_params'))
 
 
-def _retrieve_ips_to_scan(source_file_name):
+def _divide_range_to_singe_ips(ip_range):
     """
-    Needs to be implemented
+    Divide a range of ips into a list of single ips.
+    :param str ip_range: A range of ips for example 173.193.189.144/28
     :return:
     """
-    print(source_file_name)
-    return ['127.0.0.1']
+    return [str(single_ip) for single_ip in list(IPNetwork(ip_range))]
+
+
+def _retrieve_ips_to_scan(source_file_name, divide_ips):
+    """
+    Retrieve a list of ips to scan.
+    The function reads the list from a file.
+    :param str source_file_name: The name of the file which contains the ips
+    :param bool divide_ips: A flag which indicates whether an ip range should be divided to single ips
+    :return list of str: A list of ips or ip ranges
+    """
+    with open(source_file_name) as ips_file:
+        ip_ranges = ips_file.readlines()
+        if divide_ips:
+            single_ips = []
+            for ip_range in ip_ranges:
+                single_ips.extend(_divide_range_to_singe_ips(ip_range))
+            return single_ips
+        else:
+            return ip_ranges
 
 
 def _create_slave_socket(port):
@@ -83,25 +104,26 @@ def _parse_flags(flags):
     # Include closed port
     if 'c' in flags:
         additional_params = ' -ddd'
-    return nmap_args, additional_params
+    return NmapParameters(nmap_params=nmap_args, additional_params=additional_params)
 
 
-def _send_ips_to_slaves(ips_to_scan, slave_sockets, flags, ports):
+def _send_ips_to_slaves(ips_to_scan, slave_sockets, flags, nmap_params, ports):
     """
     Distributes the scanning between the slaves in a cycle.
     :param list of str ips_to_scan:
     :param itertools.cycle slave_sockets:
-    :param str flags: The flags that will be parsed and passed to the slave
+    :param str flags: The flags that were passed to the script
+    :param NmapParameters nmap_params: A named tuple that conatins the main and additional params for the script.
     :param str ports: The ports to scan.
     :return scan: The scan that was initialized
     """
     for index, ip in enumerate(ips_to_scan):
         logger.info('scanning {ip}...'.format(ip=ip))
         scan = _create_new_scan(ip)
-        opt, additional_args = _parse_flags(flags)
         next(slave_sockets).send_json(
             {'ip': ip, 'scan_id': scan.id,
-             'configuration': {'ports': ports, 'opt': opt, 'additional_args': additional_args, 'params': flags}})
+             'configuration': {'ports': ports, 'opt': nmap_params.nmap_params,
+                               'additional_args': nmap_params.additional_params, 'params': flags}})
 
 
 def _create_new_scan(ip):
@@ -144,7 +166,8 @@ def start_master(ips_to_scan, flags, ports):
     reporter = context.socket(zmq.PULL)
     reporter.bind("tcp://{ip}:{port}".format(ip=MASTER_IP, port=REPORT_PORT))
 
-    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags=flags, ports=ports)
+    nmap_params = _parse_flags(flags)
+    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags=flags, nmap_params=nmap_params, ports=ports)
 
     # Wait for all of the scans to complete or fail
     for ip in ips_to_scan:
@@ -179,7 +202,7 @@ if __name__ == '__main__':
     try:
         arguments = parse_arguments()
         ips_to_scan = _retrieve_ips_to_scan(arguments.ips_source_file_name)
-        # start_master(ips_to_scan=ips_to_scan, flags=arguments.flags, ports=arguments.ports)
+        start_master(ips_to_scan=ips_to_scan, flags=arguments.flags, ports=arguments.ports)
     except (KeyboardInterrupt, SystemExit):
         # We want to be able to abort the running of the code without a strange log :)
         raise
