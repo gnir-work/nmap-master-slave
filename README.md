@@ -6,6 +6,7 @@ This is a basic master-slaves design for running multiple nmap scans.
 There is a master which holds a list of ips to scan.
 The master can receive a number of parameters which will effect what scans will be run.
 The master has two types of queue:
+
 * report queue, a queue from which the master will receive reports from all of the slaves
 * push queue, through this queue a master will send missions to the slave (Their is a queue per slave)
 
@@ -55,6 +56,7 @@ When running the slaves you will be asked to pass the port on which the slaves w
 
 ## Running the master
 When running the master you will be asked to pass several flags:
+
 * `-f`, `--file` -> The name of the file which will contain the list of ips (can be relative or absolute path)
 * `--divide` -> A flag which indicates whether an ips range should be a single job for one slave or should the master divide the range to single ips and each ip will be considered a job for a slave (default `True`)
 * `--flags` -> The parameters that were explained the __parameters section__ above.
