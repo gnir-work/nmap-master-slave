@@ -4,19 +4,22 @@ import zmq
 import smtplib
 import sys
 from logbook import StreamHandler, Logger, FileHandler
-from consts import MASTER_LOG_FILE, REPORT_PORT, MASTER_IP, RECEIVER_MAIL, SENDER_MAIL, SENDER_PASSWORD, SMTP_CONFIG
+from consts import MASTER_LOG_FILE, REPORT_PORT, MASTER_IP, RECEIVER_MAIL, SENDER_MAIL, SENDER_PASSWORD, SMTP_CONFIG, \
+    SLAVE_ERROR_SIGNAL
 from itertools import cycle
 from orm import NmapScan
 from db import get_session
 from netaddr import IPNetwork
+from collections import defaultdict
 
 StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(MASTER_LOG_FILE, bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
-SLAVE_PORTS = [5555, 5556, 5557, 5558]
+SLAVE_PORTS = [5555, 5556]
 session = get_session()
 NmapParameters = namedtuple('NmapParameters', ('nmap_params', 'additional_params'))
+queues = defaultdict(list)
 
 
 def _divide_range_to_singe_ips(ip_range):
@@ -39,12 +42,10 @@ def _retrieve_ips_to_scan(source_file_name, divide_ips=False):
     with open(source_file_name) as ips_file:
         ip_ranges = [ip_range.strip() for ip_range in ips_file.readlines()]
         if divide_ips:
-            single_ips = []
-            for ip_range in ip_ranges:
-                single_ips.extend(_divide_range_to_singe_ips(ip_range))
-            return single_ips
-        else:
-            return ip_ranges
+            return [ip
+                    for ip_range in ip_ranges
+                    for ip in _divide_range_to_singe_ips(ip_range)]
+        return ip_ranges
 
 
 def _create_slave_socket(port):
@@ -107,23 +108,54 @@ def _parse_flags(flags):
     return NmapParameters(nmap_params=nmap_args, additional_params=additional_params)
 
 
-def _send_ips_to_slaves(ips_to_scan, slave_sockets, flags, nmap_params, ports):
+def _send_ips_to_slaves(ips_to_scan, slave_ports, flags, nmap_params, ports):
     """
-    Distributes the scanning between the slaves in a cycle.
+    Distributes the scanning between the slaves in a cycle and saves the queues in a dict for management.
     :param list of str ips_to_scan:
-    :param itertools.cycle slave_sockets:
     :param str flags: The flags that were passed to the script
     :param NmapParameters nmap_params: A named tuple that conatins the main and additional params for the script.
     :param str ports: The ports to scan.
-    :return scan: The scan that was initialized
+    :return list: The ips that failed
     """
+    slave_sockets = cycle(map(_create_slave_socket, slave_ports))
+    logger.info("Scanning {} ips".format(ips_to_scan))
     for index, ip in enumerate(ips_to_scan):
-        logger.info('scanning {ip}...'.format(ip=ip))
+        current_slave_port = slave_ports[index % len(slave_ports)]
+        logger.info('scanning {ip} on port {port}...'.format(ip=ip, port=current_slave_port))
         scan = _create_new_scan(ip)
         next(slave_sockets).send_json(
             {'ip': ip, 'scan_id': scan.id,
              'configuration': {'ports': ports, 'opt': nmap_params.nmap_params,
                                'additional_args': nmap_params.additional_params, 'params': flags}})
+        queues[current_slave_port].append(ip)
+
+
+def _wait_for_scans_to_complete(ips_to_scan, reporter):
+    """
+    Waits for the scan to complete.
+    In case a scan has failed the function will update the managed queues dict.
+    :param list ips_to_scan:
+    :param zmq.sugar.socket.Socket reporter: The socket to which the slaves report.
+    :return tuple: (list of ports of the dead slaves, list of ips that have failed)
+    """
+    failed_scans = []
+    dead_slaves = []
+    # Wait for all of the scans to complete or fail
+    logger.info("The queues state: {}".format(queues))
+    for ip in ips_to_scan:
+        data = reporter.recv_json()
+        logger.info('Done scanning {ip} with status: {status}'.format(ip=ip, status=data['status']))
+        if data['status'] == SLAVE_ERROR_SIGNAL:
+            logger.info("Adding {} to failed scans".format(queues[data['port']]))
+            failed_scans.extend(queues[data['port']])
+            dead_slaves.append(data['port'])
+            for ip in queues[data['port']][1:]:
+                logger.info("Not waiting for {} as the slave died".format(ip))
+                ips_to_scan.remove(ip);
+            del queues[data['port']]
+        else:
+            queues[data['port']].remove(ip)
+    return dead_slaves, failed_scans
 
 
 def _create_new_scan(ip):
@@ -160,20 +192,38 @@ def _send_mail(ips):
 
 
 def start_master(ips_to_scan, flags, ports):
-    slave_sockets_iter = cycle(map(_create_slave_socket, SLAVE_PORTS))
+    """
+    Start the master.
+    The master will try to send to ips to the slaves that are currently alive,
+    The master will continue distributing the ips to slave until there are no ips or no slaves alive.
+    :param ips_to_scan: The ips to scan
+    :param flags: The flags that will be parsed to nmap scans
+    :param ports: The ports that will be scanned
+    """
+    nmap_params = _parse_flags(flags)
 
     # Create report socket
     reporter = context.socket(zmq.PULL)
     reporter.bind("tcp://{ip}:{port}".format(ip=MASTER_IP, port=REPORT_PORT))
 
-    nmap_params = _parse_flags(flags)
-    _send_ips_to_slaves(ips_to_scan, slave_sockets_iter, flags=flags, nmap_params=nmap_params, ports=ports)
+    slave_ports = SLAVE_PORTS
+    ips_sent_for_scan = ips_to_scan
 
-    # Wait for all of the scans to complete or fail
-    for ip in ips_to_scan:
-        logger.info('Done scanning {ip} with status: {status}'.format(ip=ip, status=reporter.recv_json()['status']))
+    while ips_to_scan:
+        _send_ips_to_slaves(ips_to_scan, flags=flags, nmap_params=nmap_params, slave_ports=slave_ports, ports=ports)
+        dead_slaves, failed_scans = _wait_for_scans_to_complete(ips_to_scan, reporter)
+        logger.info("Scan cycle result:")
+        logger.info("dead slaves: {}".format(dead_slaves))
+        logger.info("failed scans: {}".format(failed_scans))
 
-    _send_mail(ips_to_scan)
+        slave_ports = list(set(slave_ports) - set(dead_slaves))
+        logger.info("slave ports: {}".format(slave_ports))
+        if slave_ports:
+            ips_to_scan = failed_scans
+        else:
+            raise Exception("No more slaves left :(")
+
+    #_send_mail(ips_sent_for_scan)
 
 
 def parse_arguments():

@@ -6,6 +6,7 @@ import re
 import datetime
 from nmap import PortScannerAsync
 from multiprocessing.dummy import Pool as ThreadPool
+from custom_exceptions import NmapScanException
 
 
 class NmapWaitForMe(PortScannerAsync):
@@ -14,6 +15,8 @@ class NmapWaitForMe(PortScannerAsync):
     def check_for_proc(self):
         if self._process.is_alive():
             self._process.join()
+        if self._process.exitcode != 0:
+            raise NmapScanException
 
 
 # FUNCTIONS ----------------------------------------------

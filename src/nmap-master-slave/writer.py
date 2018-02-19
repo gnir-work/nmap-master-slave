@@ -22,31 +22,36 @@ class MysqlWriter(object):
         return self._session
 
     def write_results_to_db(self, host, result):
-        self._check_result(host, result)
-        self.logger.info("Starting to parse scan from {}...".format(host))
+        try:
+            self._check_result(host, result)
+            self.logger.info("Starting to parse scan from {}...".format(host))
 
-        scan = get_scan_by_id(self.npm_scan_id, self.session)
-        scan.elapsed = result['nmap']['scanstats']['elapsed']
-        for protocol in filter(lambda prot: prot in PROTOCOLS, result['scan'][host]):
-            for port in result['scan'][host][protocol]:
-                try:
-                    if not (self.ignore_closed_ports and result['scan'][host][protocol][port]['reason'] == 'no-response'):
-                        scanned_port = PortScan(port=port,
-                                                protocol=protocol,
-                                                state=result['scan'][host][protocol][port]['state'],
-                                                name=result['scan'][host][protocol][port].get('name', ''),
-                                                method=result['nmap']['scaninfo'][protocol]['method'],
-                                                reason=result['scan'][host][protocol][port]['reason'],
-                                                product=result['scan'][host][protocol][port]['product'],
-                                                version=result['scan'][host][protocol][port]['version'])
-                        scan.ports.append(scanned_port)
-                except Exception:
-                    # Make sure nothing strange happens in the db.
-                    self.session.rollback()
-                    raise
-            self.session.commit()
-            self.logger.info("Found {} ports on {} in this scan".format(len(result['scan'][host][protocol]), host))
-        self.logger.info("Found {} ports on {} in total so far".format(len(scan.ports), host))
+            scan = get_scan_by_id(self.npm_scan_id, self.session)
+            scan.elapsed = result['nmap']['scanstats']['elapsed']
+            for protocol in filter(lambda prot: prot in PROTOCOLS, result['scan'][host]):
+                for port in result['scan'][host][protocol]:
+                    try:
+                        if not (self.ignore_closed_ports and result['scan'][host][protocol][port][
+                            'reason'] == 'no-response'):
+                            scanned_port = PortScan(port=port,
+                                                    protocol=protocol,
+                                                    state=result['scan'][host][protocol][port]['state'],
+                                                    name=result['scan'][host][protocol][port].get('name', ''),
+                                                    method=result['nmap']['scaninfo'][protocol]['method'],
+                                                    reason=result['scan'][host][protocol][port]['reason'],
+                                                    product=result['scan'][host][protocol][port]['product'],
+                                                    version=result['scan'][host][protocol][port]['version'])
+                            scan.ports.append(scanned_port)
+                    except Exception:
+                        # Make sure nothing strange happens in the db.
+                        self.session.rollback()
+                        raise
+                self.session.commit()
+                self.logger.info("Found {} ports on {} in this scan".format(len(result['scan'][host][protocol]), host))
+            self.logger.info("Found {} ports on {} in total so far".format(len(scan.ports), host))
+        except Exception:
+            self.logger.exception()
+            raise
 
     @staticmethod
     def _check_result(host, result):
