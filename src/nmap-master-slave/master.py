@@ -223,7 +223,7 @@ def start_master(ips_to_scan, flags, ports):
         else:
             raise Exception("No more slaves left :(")
 
-    #_send_mail(ips_sent_for_scan)
+    _send_mail(ips_sent_for_scan)
 
 
 def parse_arguments():
