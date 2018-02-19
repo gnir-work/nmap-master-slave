@@ -12,3 +12,7 @@ class ParseException(Exception):
 
 class DbException(Exception):
     pass
+
+
+class NmapScanException(Exception):
+    pass

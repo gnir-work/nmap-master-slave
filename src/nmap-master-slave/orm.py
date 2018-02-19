@@ -15,7 +15,7 @@ class NmapScan(Base):
     """
     __tablename__ = 'nmap_scan'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ip = Column(String(16))
+    ip = Column(String(24))
     start_time = Column(DateTime)
     elapsed = Column(Float)
     status = Column(String(32))

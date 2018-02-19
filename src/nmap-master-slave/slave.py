@@ -4,7 +4,7 @@ import sys
 import argparse
 from datetime import datetime as dt
 from logbook import StreamHandler, FileHandler, Logger
-from custom_exceptions import SocketNotConnected
+from custom_exceptions import SocketNotConnected, NmapScanException
 from seeker import scan_port
 from consts import SLAVE_ERROR_SIGNAL, SLAVE_LOG_FILE_FORMAT, SLAVE_OK_SIGNAL, REPORT_PORT, ZMQ_PROTOCOL, MASTER_IP
 from writer import MysqlWriter
@@ -25,12 +25,12 @@ class Slave(object):
     A slave that will listen on one port for jobs and execute them while reporting back to the master.
     """
 
-    def __init__(self, id, port):
+    def __init__(self, id, port, receive_socket=None, report_socket=None, session=None):
         self.id = id
         self.port = port
-        self._receive_socket = None
-        self._report_socket = None
-        self.session = get_session()
+        self._receive_socket = receive_socket
+        self._report_socket = report_socket
+        self.session = get_session() or session
 
     @staticmethod
     def _check_socket(socket):
@@ -88,12 +88,17 @@ class Slave(object):
                 self.session.commit()
             except (KeyboardInterrupt, SystemExit):
                 # We want to be able to abort the running of the code without a strange log :)
+                self.die()
                 raise
             except Exception:
-                self.report_socket.send_json({'status': SLAVE_ERROR_SIGNAL})
+                logger.exception()
+                self.die()
                 raise
             else:
-                self.report_socket.send_json({'status': SLAVE_OK_SIGNAL})
+                self.report_socket.send_json({'status': SLAVE_OK_SIGNAL, 'port': self.port})
+
+    def die(self):
+        self.report_socket.send_json({'status': SLAVE_ERROR_SIGNAL, 'port': self.port})
 
     def _run_scans_async(self, data):
         """
@@ -112,14 +117,21 @@ class Slave(object):
             ))
             writer = MysqlWriter(npm_scan_id=data['scan_id'], logger=logger,
                                  ignore_closed_ports=ignore_closed_ports,
-                                 session=get_session())
-            processes.append(Process(target=scan_port, args=(opt, data['ip'], conf['ports'], conf['params'],
-                                                             port_add_arguments + conf['additional_args'],
-                                                             writer.write_results_to_db)))
+                                 session=get_session(),
+                                 )
+            processes.append(Process(target=run_scan, args=(opt, data['ip'], conf['ports'], conf['params'],
+                                                            port_add_arguments + conf['additional_args'],
+                                                            writer.write_results_to_db)))
         for processes in processes:
             processes.start()
             if processes.is_alive():
                 processes.join()
+            if processes.exitcode != 0:
+                raise NmapScanException
+
+
+def run_scan(opt, ip, ports, params, port_add_arguments, callback):
+    scan_port(opt, ip=ip, ports=ports, params=params, port_add_arguments=port_add_arguments, callback=callback)
 
 
 def parse_arguments():
