@@ -63,25 +63,36 @@ When running the master you will be asked to pass several flags:
 * `-p`, `--ports` -> The ports that will be scanned in the nmap scan.
 
 ## Examples
-on slave machine: 
+#### on first slave machine: 
 ```bash
 python3 slave.py -i 5555
 ```
-on master: 
+#### on second slave machine:
+```bash
+python3 slave.py -i 5556
+```
+#### on master: 
 ```bash
 python3 master.py -f ips_to_scan.txt --flags pc --ports  3000-6000
 ```
 
-ips_to_scan.txt:
+#### in master.py 
+```python
+# This is important and very error prone!
+SLAVE_PORTS = [5555, 5556]
+```
+
+#### ips_to_scan.txt:
 ```bash
 127.0.0.1
 159.122.141.152/29
 ```
 
-This will start the master which will send the slave each time a different ip to scan.
-(if you will pass the `--divide` flag to the master than the ip `159.122.141.152/29` will be
+This will start the master which will send each slave each time a different ip to scan (in a cycle).
+
+__NOTE:__ if you will pass the `--divide` flag to the master than the ip `159.122.141.152/29` will be
 divided to several ips `159.122.141.152`, `159.122.141.153`, ..., `159.122.141.159`)
 
-**NOTE:** It doesn't matter if the master is run first or the slaves, and as a matter of fact you can leave the slaves on and run the master
+__NOTE:__ It doesn't matter if the master is run first or the slaves, and as a matter of fact you can leave the slaves on and run the master
 as many times as you want with different ips and parameters. However it is recommended to start all of the slaves first.
 
