@@ -22,7 +22,7 @@ NmapParameters = namedtuple('NmapParameters', ('nmap_params', 'additional_params
 queues = defaultdict(list)
 
 
-def _divide_range_to_singe_ips(ip_range):
+def _divide_range_to_single_ips(ip_range):
     """
     Divide a range of ips into a list of single ips.
     :param str ip_range: A range of ips for example 173.193.189.144/28
@@ -44,7 +44,7 @@ def _retrieve_ips_to_scan(source_file_name, divide_ips=False):
         if divide_ips:
             return [ip
                     for ip_range in ip_ranges
-                    for ip in _divide_range_to_singe_ips(ip_range)]
+                    for ip in _divide_range_to_single_ips(ip_range)]
         return ip_ranges
 
 
