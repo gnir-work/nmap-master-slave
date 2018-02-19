@@ -96,3 +96,9 @@ divided to several ips `159.122.141.152`, `159.122.141.153`, ..., `159.122.141.1
 __NOTE:__ It doesn't matter if the master is run first or the slaves, and as a matter of fact you can leave the slaves on and run the master
 as many times as you want with different ips and parameters. However it is recommended to start all of the slaves first.
 
+## Error handling
+In case a slave got an exception while handling an ip to scan it will report to master prior to exiting,
+the master will than remove the slave from the list of active slaves and resend all of the ips that were sent to the
+dead slave that were not yet completed (including the current ip on which the slave failed).
+
+__NOTE:__ The slave will die on every exception!
