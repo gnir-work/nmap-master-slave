@@ -1,14 +1,14 @@
 # README #
 ### What is this repository for? ###
 
-This is a basic master-slaves design for running multiple nmap scans.
-### The design:
+This is a basic master-slave design pattern for running multiple nmap scans.
+### Design:
 There is a master which holds a list of ips to scan.
-The master can receive a number of parameters which will effect what scans will be run.
-The master has two types of queue:
+The master can receive a number of parameters which will effect which scans will be run.
+The master has two types of queues:
 
-* report queue, a queue from which the master will receive reports from all of the slaves
-* push queue, through this queue a master will send missions to the slave (Their is a queue per slave)
+* Report queue, a queue from which the master receives reports from all of the slaves
+* Push queue, through this queue a master sends missions to the slave (There is a queue per slave)
 
 At the end of all of the scans the master will send a mail to the defined emails (in `consts.py`)
 
@@ -21,11 +21,11 @@ For example:
 * The logging
 * The port of the report queue 
 
-One thing which is configurable (and must be updated) however isn't in `consts.py` are the ports of the slaves
+One thing which is configurable (and must be updated) and isn't in `consts.py` are the ports of the slaves
 They are located in `master.py` as they are not a const by definition.
 
-___side note___: _This design pattern was chosen because we wanted to have full control over what slave
-will receive what task and we couldn't get that from a single queue for pushing the tasks to the slave because
+___side note___: _This design pattern was chosen because we wanted to have full control over which slave
+will receive which task and we couldn't get that functionality from a single push queue because
 of how zmq works_
 
 __side note 2__:  _There might be a second implementation where the master will be a rest api server and the slaves
