@@ -91,7 +91,7 @@ SLAVE_PORTS = [5555, 5556]
 This will start the master which will send each slave each time a different ip to scan (in a cycle).
 
 __NOTE:__ if you will pass the `--divide` flag to the master than the ip `159.122.141.152/29` will be
-divided to several ips `159.122.141.152`, `159.122.141.153`, ..., `159.122.141.159`)
+divided to several ips (`159.122.141.152`, `159.122.141.153`, ..., `159.122.141.159`)
 
 __NOTE:__ It doesn't matter if the master is run first or the slaves, and as a matter of fact you can leave the slaves on and run the master
 as many times as you want with different ips and parameters. However it is recommended to start all of the slaves first.
