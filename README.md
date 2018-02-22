@@ -53,16 +53,18 @@ The configurations of db are in `consts.py` (user, password, server host, etc..)
 ## Setting up the mysql server
 __For a detailed guide go to__: https://www.copahost.com/blog/grant-mysql-remote-access/
 
-####quick run through:
 Step for setting up mysql server:
+
 * First you need to edit the configuration file and replace the line `bind-address  = 127.0.0.1` to `bind-address   = 0.0.0.0`
     1. on debian 9 the file is located at: /etc/mysql/mysql.conf.d/mysqld.cnf
     2. on centos7.x by default the file is located at: /etc/my.cnf
     3. _note_: on centos7.x you can run the command in order to find the conf file: `/usr/libexec/mysqld --help --verbose` which will output a lot of text, look for the line: `Default options are read from the following files in the given order:`
+
 * Restart the mysql server:
     + On debian 9 and centos7.x: 
         1. `systemctl stop mysql` 
         2. `systemctl start mysql`
+
 * Setup a user for remote connection:
     1. connect to the mysql server by running `mysql -u root -p`, afterwards you will be prompted for the root password you chose on setup.
     2. Run the following command (This will create a user with root privileges): 
