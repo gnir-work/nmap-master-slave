@@ -16,7 +16,7 @@ StreamHandler(sys.stdout, bubble=True, level='DEBUG').push_application()
 FileHandler(MASTER_LOG_FILE, bubble=True, level='INFO').push_application()
 logger = Logger('Master')
 context = zmq.Context()
-SLAVE_PORTS = [5555, 5556]
+SLAVE_PORTS = [5555]
 session = get_session()
 NmapParameters = namedtuple('NmapParameters', ('nmap_params', 'additional_params'))
 queues = defaultdict(list)
