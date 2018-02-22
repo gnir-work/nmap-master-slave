@@ -54,7 +54,6 @@ The configurations of db are in `consts.py` (user, password, server host, etc..)
 __For a detailed guide go to__: https://www.copahost.com/blog/grant-mysql-remote-access/
 
 ####quick run through:
-
 Step for setting up mysql server:
 * First you need to edit the configuration file and replace the line `bind-address  = 127.0.0.1` to `bind-address   = 0.0.0.0`
     * on debian 9 the file is located at: /etc/mysql/mysql.conf.d/mysqld.cnf
@@ -72,7 +71,6 @@ Step for setting up mysql server:
     IDENTIFIED BY '[new-password]';
     FLUSH PRIVILEGES;
     ```
-
 
 ## Running the slaves
 When running the slaves you will be asked to pass the port on which the slave will listen via the argument `-p`.
