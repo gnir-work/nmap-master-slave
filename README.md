@@ -32,7 +32,7 @@ __side note 2__:  _There might be a second implementation where the master will 
 will talk with it via __HTTP__, in case there will be it will be implemented on a different branch (probably implemented in flask)._
 
 
-## Parameters that can be passed to master
+## Parameters that can be passed to master (through --flags, see explanataion on running the master)
 * The default is running the following 4 scans: -sS, -sU, -sN -sF
 * `p` parameter will add another scan: -sO
 * `t1` parameter will change -sS to -sS-Pn -sU to -sU-Pn using a predifined list of known vpn ports 
